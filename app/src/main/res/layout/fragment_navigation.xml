@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/dp_67"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:translationZ="@dimen/dp_10"
+    android:elevation="@dimen/dp_10">
+
+    <com.google.android.material.tabs.TabLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dp_10"
+        android:id="@+id/tabLayout"
+        app:tabIndicator="@drawable/shape_indicator_select"
+        app:tabIndicatorColor="@color/indicator_color"
+        app:tabIndicatorGravity="center"
+        android:translationZ="@dimen/dp_5"
+        app:tabIndicatorHeight="@dimen/dp_10"
+        app:tabGravity="fill"
+        app:tabMode="fixed"
+        app:tabIndicatorAnimationDuration="500"
+        android:background="@android:color/transparent"
+        app:tabRippleColor="@android:color/transparent"/>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dp_63"
+        android:layout_marginTop="@dimen/dp_5"
+        app:cardCornerRadius="@dimen/dp_0"
+        app:cardElevation="@dimen/dp_5"
+        app:cardBackgroundColor="@android:color/transparent">
+
+        <com.github.mmin18.widget.RealtimeBlurView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:realtimeBlurRadius="@dimen/real_blur_view_radius"
+            app:realtimeOverlayColor="@color/glass_style"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:id="@+id/navigation_box"/>
+
+    </androidx.cardview.widget.CardView>
+
+</RelativeLayout>

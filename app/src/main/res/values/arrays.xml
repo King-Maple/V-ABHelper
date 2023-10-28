@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="UseApp">
+        <item>com.meizu.flyme.update</item>
+    </string-array>
+</resources>

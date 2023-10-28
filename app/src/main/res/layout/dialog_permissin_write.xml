@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+    <ImageView
+        android:layout_width="@dimen/dp_55"
+        android:layout_height="@dimen/dp_55"
+        android:src="@mipmap/ic_file"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/dp_55"
+        android:id="@+id/icon"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/sp_17"
+        android:text="存储空间权限申请"
+        android:textColor="@color/white"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/dp_20"
+        android:id="@+id/name"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dp_50"
+        android:layout_marginStart="@dimen/dp_20"
+        android:layout_marginEnd="@dimen/dp_20"
+        android:text="本程序在“选择刷机包”时需要“读写手机存储权限”才能正常获取刷机包路径。除此之外，不会用于其他任何操作。"
+        android:textSize="@dimen/sp_16"
+        android:textColor="@color/white"
+        android:id="@+id/content"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="@dimen/dp_30"
+        android:layout_marginStart="@dimen/dp_20"
+        android:layout_marginEnd="@dimen/dp_20">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="@dimen/dp_25"
+            android:layout_height="@dimen/dp_25"
+            app:cardCornerRadius="12.5dp"
+            app:cardElevation="@dimen/dp_0"
+            app:cardBackgroundColor="#33FFFFFF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="@dimen/dp_20"
+                    android:layout_height="@dimen/dp_20"
+                    android:src="@mipmap/ic_folder"
+                    android:tint="@color/white"
+                    tools:ignore="UseAppTint"
+                    android:id="@+id/sub_icon"/>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="@dimen/dp_10">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="用于获取更新包信息"
+                android:textSize="@dimen/sp_16"
+                android:textColor="@color/white"
+                android:id="@+id/sub_content"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="授予该权限后，软件可以自由访问设备上外部存储的公开数据，如写入文件、获取图片等"
+                android:textSize="@dimen/dp_15"
+                android:textColor="#33FFFFFF"
+                android:layout_marginTop="@dimen/dp_5"
+                android:id="@+id/sub_tips"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginStart="@dimen/dp_15"
+        android:layout_marginEnd="@dimen/dp_15"
+        android:layout_marginBottom="@dimen/dp_20">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dp_50"
+                app:cardCornerRadius="@dimen/dp_25"
+                app:cardBackgroundColor="#33FFFFFF"
+                android:layout_weight="1"
+                android:layout_margin="@dimen/dp_5"
+                app:cardElevation="@dimen/dp_0"
+                android:id="@+id/cancel_button">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="取消"
+                    android:textSize="@dimen/sp_18"
+                    android:textColor="@color/white"/>
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/dp_50"
+                app:cardCornerRadius="@dimen/dp_25"
+                app:cardBackgroundColor="@color/theme"
+                android:layout_weight="1"
+                android:layout_margin="@dimen/dp_5"
+                app:cardElevation="@dimen/dp_0"
+                android:id="@+id/confirm_button">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:text="授权"
+                    android:textSize="@dimen/sp_18"
+                    android:textColor="@color/white"/>
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</LinearLayout>

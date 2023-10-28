@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">V-AB更新助手</string>
+    <string name="main_tips" tools:ignore="TypographyDashes"><![CDATA[软件运行前提：<br>1. 设备获取Root权限且以授予本软件权限；
+		<br>2. 设备支持<a href="https://blog.csdn.net/oAiYinSiTan12/article/details/119685061">V-AB系统分区</a>；
+		<br> <br>
+		可能出现的问题：
+		<br>
+		1. 选择ROM路径时一定要从“本机存储”中选择，否则可能会无法选择ROM；
+		<br>
+		2. 由于Android对后台服务的限制，请在更新时尽量保证本软件为前台应用；
+		<br>
+		3. 如果出现卡进度的情况(一般是挂后台出现)，可以直接结束应用，重新选择相同的ROM更新即可(进度不会重置)；
+		<br>
+		4. 检测“Root“环境优先检测“Magisk”其次是“KernelSU”,不支持两个共存的保留方式。
+		<br>
+		5. 如果提示更新失败，请重启手机并等候一段时间再进行刷写操作]]></string>
+</resources>

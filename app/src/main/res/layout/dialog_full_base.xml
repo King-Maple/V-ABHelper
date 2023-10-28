@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:cardCornerRadius="@dimen/dp_0"
+    android:elevation="@dimen/dp_0"
+    app:cardBackgroundColor="@android:color/transparent">
+
+    <com.github.mmin18.widget.RealtimeBlurView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:realtimeOverlayColor="#8C000000"
+        app:realtimeBlurRadius="@dimen/dp_25"
+        android:id="@+id/blur_view"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:id="@+id/root_view"
+        android:layout_marginTop="@dimen/dp_45"/>
+
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 整个背景色-->
+    <item>
+        <shape>
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    <!-- 底部圆角,参数是固定的 -->
+    <item>
+        <shape>
+            <solid android:color="@color/indicator_color" />
+            <corners
+                android:topLeftRadius="@dimen/dp_20"
+                android:topRightRadius="@dimen/dp_20"/>
+        </shape>
+    </item>
+</layer-list>

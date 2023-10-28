@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="false">
+        <shape>
+            <!--设置圆角大小-->
+            <!--<corners android:radius="10dp"/>-->
+            <!--设置背景颜色渐变-->
+            <gradient
+                android:startColor="@color/indicator_color_50"
+                android:endColor="#00000000"
+                android:angle="-90"/>
+        </shape>
+    </item>
+</selector>

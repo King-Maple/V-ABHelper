@@ -33,6 +33,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 
+import com.ejlchina.okhttps.OkHttps;
 import com.flyme.update.helper.App;
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.activity.BaseActivity;
@@ -44,9 +45,14 @@ import com.flyme.update.helper.utils.NotificationUtils;
 import com.flyme.update.helper.utils.UpdateInfo;
 import com.flyme.update.helper.utils.UpdateParser;
 import com.flyme.update.helper.widget.TouchFeedback;
+import com.kongzue.dialogx.dialogs.BottomDialog;
+import com.kongzue.dialogx.dialogs.BottomMenu;
+import com.kongzue.dialogx.dialogs.InputDialog;
 import com.kongzue.dialogx.dialogs.MessageDialog;
 import com.kongzue.dialogx.dialogs.TipDialog;
 import com.kongzue.dialogx.dialogs.WaitDialog;
+import com.kongzue.dialogx.interfaces.OnDialogButtonClickListener;
+import com.kongzue.dialogx.interfaces.OnIconChangeCallBack;
 import com.kongzue.filedialog.FileDialog;
 import com.kongzue.filedialog.interfaces.FileSelectCallBack;
 import com.topjohnwu.superuser.Shell;
@@ -55,6 +61,7 @@ import com.topjohnwu.superuser.nio.ExtendedFile;
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import org.apache.commons.io.IOUtils;
+import org.json.JSONArray;
 
 import java.io.File;
 import java.io.IOException;
@@ -272,7 +279,11 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     @Override
     public void onClick(View view) {
         int id = view.getId();
-        if (id == R.id.help_button) {
+        if (id == R.id.download_button) {
+            updateSuccess();
+        }
+
+        else if (id == R.id.help_button) {
             MessageDialog.build()
                     .setTitle("使用方法")
                     .setMessage("准备工作：\n下载好与本设备对应的刷机包，并且给软件授予相应的权限\n\n使用方法：\n1. 点击”选择文件更新“按钮选择下载好的刷机包\n2. 弹出窗口，点击”开始刷机“并等待结束\n3. 选择是否保留 Root \n4. 重启手机即可")
@@ -396,7 +407,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             }
         }
 
-
         try {
             ExtendedFile stub = remoteFS.getFile("/data/adb/magisk/stub.apk");
             if (!stub.exists()) {
@@ -425,6 +435,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             return;
         }
         List<String> stdout = new ArrayList<>();
+        List<String> stderr = new ArrayList<>();
         // 使用面具自带的脚本进行修补
         boolean isSuccess = shell.newJob()
                 .add("cd /data/adb/magisk")
@@ -434,11 +445,11 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                         "RECOVERYMODE=" + Config.recovery + " "+
                         "SYSTEM_ROOT=" + Config.isSAR + " " +
                         "sh boot_patch.sh " + installDir + "/boot.img")
-                .to(stdout, null)
+                .to(stdout, stderr)
                 .exec()
                 .isSuccess();
         if (!isSuccess) {
-            showErrorDialog(String.join("\n", stdout));
+            showErrorDialog("stdout:\n\n" + String.join("\n", stdout) + "stderr:\n\n" + String.join("\n", stderr));
             return;
         }
         shell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
@@ -463,39 +474,144 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         showRebootDialog("安装成功","安装到未使用卡槽完成");
     }
 
-    private void updateSuccess() {
-        if (Config.hasMagisk) {
-            MessageDialog.build()
-                    .setTitle("更新完成")
-                    .setMessage("检测到当前环境是 Magisk ,是否安装到未使用的卡槽(保留 Magisk)")
-                    .setOkButton("重启",(baseDialog, v) -> {
-                        reboot();
-                        return false;
-                    })
-                    .setCancelButton("安装",(baseDialog, v) -> {
-                        activity.getASynHandler().post(this::patchMagisk);
-                        return false;
-                    })
-                    .setOtherButton("取消")
-                    .show();
-        } else if (activity.uUpdateServiceManager.GetKsuVersion() > 0) {
-            MessageDialog.build()
-                    .setTitle("更新完成")
-                    .setMessage("检测到当前环境是 KernelSu ,是否安装到未使用的卡槽(保留 KernelSu)\n\n注意：因为版本的更新，可能内核的变动很大，可能保留更新会无法开机。")
-                    .setOkButton("重启",(baseDialog, v) -> {
-                        reboot();
-                        return false;
-                    })
-                    .setCancelButton("安装",(baseDialog, v) -> {
-                        activity.getASynHandler().post(this::patchKernelSU);
-                        return false;
-                    })
-                    .setOtherButton("取消")
-                    .show();
-        } else {
-            showRebootDialog("更新完成","更新完成，是否立即重启手机");
+    // https://github.com/bmax121/KernelPatch/releases/download/0.10.0/kpimg-android
+    // https://github.com/bmax121/KernelPatch/releases/download/0.10.0/kptools-android
+    private void patchAPatch(String SuperKey) {
+        WaitDialog.show("开始安装 APatch ...");
+
+        String rep = OkHttps.sync("https://api.github.com/repos/bmax121/KernelPatch/releases")
+                .get()
+                .getBody().toString();
+        String lastTag = "";
+        try {
+            JSONArray jsonArray = new JSONArray(rep);
+            lastTag = jsonArray.getJSONObject(0).getString("name");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
+        if (TextUtils.isEmpty(lastTag)) {
+            showRebootDialog("安装失败","APatch 版本获取失败，请自行操作");
+            return;
+        }
+
+        new File(installDir + "/kpimg").delete();
+        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kpimg")
+                .get()
+                .getBody()
+                .toFile(installDir + "/kpimg")
+                .start();
+        new File(installDir + "/kptools").delete();
+        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kptools")
+                .get()
+                .getBody()
+                .toFile(installDir + "/kptools")
+                .start();
+
+        new File(installDir + "/kpatch").delete();
+        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kpatch")
+                .get()
+                .getBody()
+                .toFile(installDir + "/kpatch")
+                .start();
+
+        ShellUtils.fastCmd("chmod -R 777 " + installDir);
+
+        String[] envList = new String[]{"kptools", "magiskboot", "kpimg", "kpatch"};
+        for (String file: envList) {
+            if (!new File(installDir + "/" + file).exists()) {
+                showRebootDialog("修补失败",file + " 文件不存在，请自行修补");
+                return;
+            }
+        }
+
+        // 读取当前分区，用来判断第二分区
+        String slot = App.currentSlot.equals("_a") ? "_b" : "_a";
+
+        initRemoteFS();
+
+        // 提取第二分区的boot镜像
+        String srcBoot = "/dev/block/bootdevice/by-name/boot" + slot;
+
+        new File(installDir + "/boot.img").delete();
+        new File(installDir + "/apatch_patch.img").delete();
+
+        if (!extract_image(srcBoot,installDir + "/boot.img")) {
+            showRebootDialog("安装失败","镜像分区提取错误，请自行操作");
+            return;
+        }
+
+        List<String> stdout = new ArrayList<>();
+        List<String> stderr = new ArrayList<>();
+
+        // 使用面具自带的脚本进行修补
+        boolean isSuccess = shell.newJob()
+                .add("cd " + installDir)
+                .add("sh apatch.sh " + SuperKey + " " + installDir + "/boot.img -K kpatch")
+                .to(stdout, stderr)
+                .exec()
+                .isSuccess();
+        if (!isSuccess) {
+            showErrorDialog("stdout:\n\n" + String.join("\n", stdout) + "stderr:\n\n" + String.join("\n", stderr));
+            return;
+        }
+
+        shell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
+
+        if (!flash_image(installDir + "/apatch_patch.img", srcBoot)) {
+            showRebootDialog("安装失败","刷入镜像失败，请自行操作");
+            return;
+        }
+        showRebootDialog("安装成功","安装到未使用卡槽完成");
+    }
+
+    private void updateSuccess() {
+        WaitDialog.dismiss();
+        BottomMenu.show("更新成功", "恭喜你看到我了，现在轮到你选择保留 Root 的方式了，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSu", "APatch"})
+                .setOnIconChangeCallBack(new OnIconChangeCallBack<BottomMenu>(true) {
+                    @Override
+                    public int getIcon(BottomMenu bottomMenu, int index, String menuText) {
+                        switch (index) {
+                            case 0:
+                                return R.drawable.magisk;
+                            case 1:
+                                return R.drawable.kernelsu;
+                            case 2:
+                                return R.drawable.apatch;
+                        }
+                        return 0;
+                    }
+                })
+                .setOnMenuItemClickListener((dialog, text, index) -> {
+                    switch (index) {
+                        case 0:
+                            activity.getASynHandler().post(this::patchMagisk);
+                            return false;
+                        case 1:
+                            activity.getASynHandler().post(this::patchKernelSU);
+                            return false;
+                        case 2:
+                            new InputDialog("设定超级密钥", "内核补丁的唯一密钥", "确定")
+                                    .setCancelable(false)
+                                    .setOkButton((baseDialog, v, inputStr) -> {
+                                        if (TextUtils.isEmpty(inputStr))
+                                            return true;
+                                        activity.getASynHandler().post(() -> patchAPatch(inputStr));
+                                        return false;
+                                    })
+                                    .show();
+                            return false;
+                    }
+                    return false;
+                })
+                .setOkButton("重启", (OnDialogButtonClickListener<BottomDialog>) (dialog, v) -> {
+                    reboot();
+                    return false;
+                })
+                .setCancelButton("取消", (OnDialogButtonClickListener<BottomDialog>) (dialog, v) -> {
+                    dialog.dismiss();
+                    return false;
+                });
     }
 
     private void showRebootDialog(String title,String message) {
@@ -516,7 +632,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         WaitDialog.dismiss();
         MessageDialog.build()
                 .setTitle("修补失败")
-                .setMessage("运行本机内的修补脚本失败，是否查看错误信息")
+                .setMessage("运行修补脚本失败，是否查看错误信息")
                 .setOkButton("重启",(baseDialog, v) -> {
                     reboot();
                     return false;

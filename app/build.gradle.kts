@@ -15,8 +15,8 @@ android {
         minSdk = 30
         @SuppressLint("ExpiredTargetSdkVersion")
         targetSdk = 30
-        versionCode = 140
-        versionName = "1.4.0"
+        versionCode = 150
+        versionName = "1.5.0"
 
         renderscriptTargetApi = 21
         renderscriptSupportModeEnabled = true
@@ -53,7 +53,7 @@ android {
 }
 
 dependencies {
-    compileOnly(fileTree("libs").include("*.jar"));
+    compileOnly(fileTree("libs").include("*.jar"))
 
     implementation("androidx.appcompat:appcompat:1.3.0")
     implementation("com.google.android.material:material:1.4.0")
@@ -66,7 +66,7 @@ dependencies {
     compileOnly("de.robv.android.xposed:api:82")
     implementation("org.luckypray:DexKit:1.1.6")
 
-    val libsuVersion = "5.0.4"
+    val libsuVersion = "5.2.2"
     implementation("com.github.topjohnwu.libsu:core:${libsuVersion}")
     implementation("com.github.topjohnwu.libsu:service:${libsuVersion}")
     implementation("com.github.topjohnwu.libsu:nio:${libsuVersion}")
@@ -79,13 +79,15 @@ dependencies {
 
     implementation("me.itangqi.waveloadingview:library:0.3.5")
 
-    val dialogx_version = "0.0.47"
+    val dialogx_version = "0.0.49"
     implementation("com.github.kongzue.DialogX:DialogX:${dialogx_version}")
     implementation("com.github.kongzue.DialogX:DialogXKongzueStyle:${dialogx_version}")
     implementation("com.github.kongzue.DialogX:DialogXMaterialYou:${dialogx_version}")
-    implementation("com.github.kongzue.DialogXSample:FileDialog:0.0.9")
+    implementation("com.github.kongzue.DialogXSample:FileDialog:0.0.12")
 
     implementation("com.github.getActivity:XXPermissions:18.0")
+
+    implementation("com.ejlchina:okhttps:3.5.3")
 
     implementation("commons-io:commons-io:2.11.0")
 }

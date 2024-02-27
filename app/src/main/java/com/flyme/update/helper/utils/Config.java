@@ -10,6 +10,4 @@ public class Config {
     public static boolean keepEnc = false;
 
     public static boolean patchVbmeta = false;
-
-    public static boolean hasMagisk = false;
 }

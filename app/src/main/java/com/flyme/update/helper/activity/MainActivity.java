@@ -37,7 +37,6 @@ import java.util.List;
 public class MainActivity extends BaseActivity {
 
     private final List<Fragment> fragments = new ArrayList<>();
-    private Intent RootIntent;
     private static final int MSG_WHAT_REQUEST_ROOT_PERMISSION = 0;
     private static final int MSG_WHAT_NO_ROOT_PERMISSON = 1;
 
@@ -77,6 +76,9 @@ public class MainActivity extends BaseActivity {
                     ShellUtils.fastCmd("mkdir " + getFilesDir().toString());
                     FileUtils.copyToFile(getAssets().open("M2391"), new File(getFilesDir(),"M2391.img"));
                     FileUtils.copyToFile(getAssets().open("M2381"), new File(getFilesDir(),"M2381.img"));
+                    FileUtils.copyToFile(getAssets().open("magiskboot"), new File(getFilesDir(),"magiskboot"));
+                    FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch), new File(getFilesDir(),"apatch.sh"));
+                    ShellUtils.fastCmd("chmod -R 777 " + getFilesDir().toString());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -96,8 +98,8 @@ public class MainActivity extends BaseActivity {
 
     private void openService() {
         WaitDialog.show(MainActivity.this,"正常启动服务...");
-        RootIntent = new Intent(this, UpdateService.class);
-        RootService.bind(RootIntent, new RootConnect());
+        Intent rootIntent = new Intent(this, UpdateService.class);
+        RootService.bind(rootIntent, new RootConnect());
     }
 
     class RootConnect implements ServiceConnection {

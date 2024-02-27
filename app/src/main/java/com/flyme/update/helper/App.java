@@ -5,7 +5,6 @@ import android.content.Context;
 
 import com.flyme.update.helper.utils.ShellInit;
 import com.kongzue.dialogx.DialogX;
-import com.kongzue.dialogx.style.KongzueStyle;
 import com.topjohnwu.superuser.Shell;
 
 import java.io.BufferedReader;
@@ -24,7 +23,7 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         DialogX.init(this);
-        DialogX.globalStyle = new KongzueStyle();
+        //DialogX.globalStyle = new KongzueStyle();
         isVab = getProp("ro.build.ab_update").equals("true");
         currentSlot = getProp("ro.boot.slot_suffix");
         flymemodel = getProp("ro.product.flyme.model");

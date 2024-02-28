@@ -46,6 +46,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".activity.LogActivity" />
+
         <meta-data
             android:name="xposeddescription"
             android:value="强制弹窗改为通知，跳过系统版本类型校验 By King丶枫岚" />

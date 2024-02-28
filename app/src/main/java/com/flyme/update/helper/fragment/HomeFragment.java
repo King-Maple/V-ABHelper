@@ -49,6 +49,7 @@ import com.kongzue.dialogx.dialogs.BottomDialog;
 import com.kongzue.dialogx.dialogs.BottomMenu;
 import com.kongzue.dialogx.dialogs.InputDialog;
 import com.kongzue.dialogx.dialogs.MessageDialog;
+import com.kongzue.dialogx.dialogs.PopTip;
 import com.kongzue.dialogx.dialogs.TipDialog;
 import com.kongzue.dialogx.dialogs.WaitDialog;
 import com.kongzue.dialogx.interfaces.OnDialogButtonClickListener;
@@ -236,7 +237,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 .exec()
                 .getOut();
         String result = ShellUtils.isValidOutput(out) ? out.get(out.size() - 1) : "";
-        Log.d("IUpdateService", "flash_image = " + result);
         return result.equals("0");
     }
 
@@ -321,7 +321,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 activity.showNotificationPermissinDialog();
             }
             else {
-
                 NotificationChannel channel = new NotificationChannel("new_version_push", "新版本推送", NotificationManager.IMPORTANCE_LOW);
                 mNotificationManager.createNotificationChannel(channel);
                 FileDialog.build().setSuffixArray(new String[]{".zip"})
@@ -435,7 +434,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             return;
         }
         List<String> stdout = new ArrayList<>();
-        List<String> stderr = new ArrayList<>();
         // 使用面具自带的脚本进行修补
         boolean isSuccess = shell.newJob()
                 .add("cd /data/adb/magisk")
@@ -445,11 +443,11 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                         "RECOVERYMODE=" + Config.recovery + " "+
                         "SYSTEM_ROOT=" + Config.isSAR + " " +
                         "sh boot_patch.sh " + installDir + "/boot.img")
-                .to(stdout, stderr)
+                .to(stdout, stdout)
                 .exec()
                 .isSuccess();
         if (!isSuccess) {
-            showErrorDialog("stdout:\n\n" + String.join("\n", stdout) + "stderr:\n\n" + String.join("\n", stderr));
+            showErrorDialog(String.join("\n", stdout));
             return;
         }
         shell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
@@ -501,6 +499,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 .getBody()
                 .toFile(installDir + "/kpimg")
                 .start();
+
         new File(installDir + "/kptools").delete();
         OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kptools")
                 .get()
@@ -542,17 +541,15 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
         List<String> stdout = new ArrayList<>();
-        List<String> stderr = new ArrayList<>();
-
         // 使用面具自带的脚本进行修补
         boolean isSuccess = shell.newJob()
                 .add("cd " + installDir)
                 .add("sh apatch.sh " + SuperKey + " " + installDir + "/boot.img -K kpatch")
-                .to(stdout, stderr)
+                .to(stdout, stdout)
                 .exec()
                 .isSuccess();
         if (!isSuccess) {
-            showErrorDialog("stdout:\n\n" + String.join("\n", stdout) + "stderr:\n\n" + String.join("\n", stderr));
+            showErrorDialog(String.join("\n", stdout));
             return;
         }
 
@@ -563,6 +560,15 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             return;
         }
         showRebootDialog("安装成功","安装到未使用卡槽完成");
+    }
+
+    private boolean keyChecked(String skey) {
+        for (int i = 0; i < skey.length(); i++) {
+            char ch = skey.charAt(i);
+            if (!Character.isDigit(ch) && !Character.isLetter(ch))
+                return false;
+        }
+        return true;
     }
 
     private void updateSuccess() {
@@ -593,9 +599,22 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                         case 2:
                             new InputDialog("设定超级密钥", "内核补丁的唯一密钥", "确定")
                                     .setCancelable(false)
+                                    .setInputHintText("请输入超级密钥")
                                     .setOkButton((baseDialog, v, inputStr) -> {
-                                        if (TextUtils.isEmpty(inputStr))
+                                        if (TextUtils.isEmpty(inputStr)) {
+                                            PopTip.build().setMessage("请输入超级密钥！").iconError().show();
                                             return true;
+                                        }
+                                        if (inputStr.length() < 8) {
+                                            PopTip.build().setMessage("输入的超级密钥长度小于8").iconError().show();
+                                            return true;
+                                        }
+
+                                        if (!keyChecked(inputStr)) {
+                                            PopTip.build().setMessage("超级密钥只允许存在数字字母").iconError().show();
+                                            return true;
+                                        }
+
                                         activity.getASynHandler().post(() -> patchAPatch(inputStr));
                                         return false;
                                     })

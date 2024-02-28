@@ -11,17 +11,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.interfaces.OnNavigationStateListener;
+import com.flyme.update.helper.utils.ActivityManger;
 import com.flyme.update.helper.utils.UpdateServiceManager;
 import com.flyme.update.helper.widget.TouchFeedback;
 import com.github.mmin18.widget.RealtimeBlurView;
@@ -29,6 +28,7 @@ import com.gyf.immersionbar.ImmersionBar;
 import com.hjq.permissions.Permission;
 import com.hjq.permissions.XXPermissions;
 import com.kongzue.dialogx.dialogs.CustomDialog;
+import com.kongzue.dialogx.dialogs.PopTip;
 import com.kongzue.dialogx.interfaces.OnBindView;
 
 import java.util.ArrayList;
@@ -54,13 +54,12 @@ public abstract class BaseActivity extends AppCompatActivity{
         mContext = this;
         touchFeedback = TouchFeedback.newInstance(this);
         mainHandler = new Handler(Looper.getMainLooper());
-        Log.d("升级助手","onCreate");
+        ActivityManger.addActivity(this);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d("升级助手","onStart");
         ImmersionBar.with(this)
                 .transparentStatusBar()
                 .statusBarDarkFont(true)
@@ -76,6 +75,7 @@ public abstract class BaseActivity extends AppCompatActivity{
         if (null != aSynHandler) {
             aSynHandler.removeCallbacksAndMessages(null);
         }
+        ActivityManger.removeActivity(this);
     }
 
     public boolean isNightMode(){
@@ -114,7 +114,7 @@ public abstract class BaseActivity extends AppCompatActivity{
     public void onBackPressed() {
         if (isOpenDoubleTouchClose){
             if (System.currentTimeMillis() - time > 2000) {
-                Toast.makeText(this, "再按一次退出软件", Toast.LENGTH_SHORT).show();
+                PopTip.build().setMessage("再按一次退出软件").iconWarning().show();
                 time = System.currentTimeMillis();
             } else {
                 finish();

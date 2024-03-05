@@ -3,12 +3,15 @@ package com.flyme.update.helper;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
+import android.os.Build;
 
 import com.flyme.update.helper.activity.LogActivity;
 import com.flyme.update.helper.utils.CrashHandlerUtil;
 import com.flyme.update.helper.utils.ShellInit;
 import com.kongzue.dialogx.DialogX;
 import com.topjohnwu.superuser.Shell;
+
+import org.lsposed.hiddenapibypass.HiddenApiBypass;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,6 +27,10 @@ public class App extends Application {
 
     public static int StatusBarHeight;
 
+    static {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            HiddenApiBypass.addHiddenApiExemptions("");
+    }
 
     @Override
     public void onCreate() {

@@ -11,14 +11,12 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.text.format.Formatter;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,8 +61,7 @@ public class AndroidInfo {
     public String getVerName() {
         String verName = "";
         try {
-            verName = context.getPackageManager().
-                    getPackageInfo(context.getPackageName(), 0).versionName;
+            verName = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
@@ -178,7 +175,6 @@ public class AndroidInfo {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        Log.i("TAG","----Linux Kernal is :"+result);
         return result;
     }
 
@@ -197,7 +193,6 @@ public class AndroidInfo {
         Point outPoint = new Point();
         // 可能有虚拟按键的情况
         display.getRealSize(outPoint);
-
         return outPoint.y;
     }
 

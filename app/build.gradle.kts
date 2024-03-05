@@ -15,8 +15,8 @@ android {
         minSdk = 30
         @SuppressLint("ExpiredTargetSdkVersion")
         targetSdk = 30
-        versionCode = 151
-        versionName = "1.5.1"
+        versionCode = 153
+        versionName = "1.5.3"
 
         renderscriptTargetApi = 21
         renderscriptSupportModeEnabled = true
@@ -42,12 +42,6 @@ android {
         aidl =  true
         buildConfig = true
         compose = true
-    }
-
-    externalNativeBuild {
-        cmake {
-            path("src/main/cpp/CMakeLists.txt")
-        }
     }
 
 }
@@ -78,6 +72,8 @@ dependencies {
     implementation("com.github.mmin18:realtimeblurview:1.2.1")
 
     implementation("me.itangqi.waveloadingview:library:0.3.5")
+
+    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
 
     val dialogx_version = "0.0.49"
     implementation("com.github.kongzue.DialogX:DialogX:${dialogx_version}")

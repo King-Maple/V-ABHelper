@@ -61,10 +61,6 @@
 -dontwarn okio.**
 -dontwarn org.apache.commons.codec.binary.**
 
-#必须将xposed模块的入口类排除，否则xposed找不到入口，会导致模块不生效
--keep class com.flyme.update.helper.xposed.HookEntry { *; }
--keep class com.flyme.update.helper.utils.Natives
-
 -dontwarn android.os.**
 # 保留support下的所有类及其内部类
 -keep class android.support.** {*;}

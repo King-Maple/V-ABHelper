@@ -64,5 +64,8 @@ if [ $? -ne 0 ]; then
   exit $?
 fi
 
-rm kernel.ori
+echo "- Cleaning up"
+./magiskboot cleanup >/dev/null 2>&1
+rm -f kernel.ori
+
 echo "- Patching kernel Success"

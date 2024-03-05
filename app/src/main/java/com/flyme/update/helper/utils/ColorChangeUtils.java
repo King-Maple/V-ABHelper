@@ -8,6 +8,8 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.view.View;
 
+import com.flyme.update.helper.activity.BaseActivity;
+
 
 public class ColorChangeUtils {
 
@@ -19,13 +21,14 @@ public class ColorChangeUtils {
     private final Handler mHandler;
     private final Runnable mRunnable;
 
-    public ColorChangeUtils(int[] colors, View mView) {
+    public ColorChangeUtils(BaseActivity activity, int[] colors, View mView) {
         this.colors = colors;
-        mHandler = new Handler(mView.getContext().getMainLooper());
+        mHandler = activity.getMainHandler();
         mRunnable = new Runnable() {
             @Override
             public void run() {
-                @SuppressLint("ObjectAnimatorBinding") ObjectAnimator backgroundColor = ObjectAnimator.ofInt(mView, "backgroundColor", getColorTemp(), nextColor());
+                @SuppressLint("ObjectAnimatorBinding")
+                ObjectAnimator backgroundColor = ObjectAnimator.ofInt(mView, "backgroundColor", getColorTemp(), nextColor());
                 backgroundColor.setDuration(duration);
                 backgroundColor.setEvaluator(new ArgbEvaluator());
                 backgroundColor.addListener(new AnimatorListenerAdapter() {
@@ -38,30 +41,8 @@ public class ColorChangeUtils {
                 backgroundColor.start();
             }
         };
-
-        @SuppressLint("ObjectAnimatorBinding") ObjectAnimator backgroundColor = ObjectAnimator.ofInt(mView, "backgroundColor", getColorTemp(), nextColor());
+        ObjectAnimator backgroundColor = ObjectAnimator.ofInt(mView, "backgroundColor", getColorTemp(), nextColor());
         backgroundColor.setDuration(0);
-        backgroundColor.addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-
-            }
-
-            @Override
-            public void onAnimationRepeat(Animator animation) {
-
-            }
-        });
         backgroundColor.start();
     }
 

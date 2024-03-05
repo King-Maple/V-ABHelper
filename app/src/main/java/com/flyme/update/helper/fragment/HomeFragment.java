@@ -1,10 +1,7 @@
 package com.flyme.update.helper.fragment;
 
-import static com.flyme.update.helper.R.id;
 import static com.flyme.update.helper.R.layout;
-import static com.flyme.update.helper.R.string;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -14,7 +11,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.UpdateEngine;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -22,14 +18,14 @@ import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 
@@ -42,6 +38,7 @@ import com.flyme.update.helper.utils.AndroidInfo;
 import com.flyme.update.helper.utils.ColorChangeUtils;
 import com.flyme.update.helper.utils.Config;
 import com.flyme.update.helper.utils.NotificationUtils;
+import com.flyme.update.helper.utils.UpdateEngineProxy;
 import com.flyme.update.helper.utils.UpdateInfo;
 import com.flyme.update.helper.utils.UpdateParser;
 import com.flyme.update.helper.widget.TouchFeedback;
@@ -62,12 +59,13 @@ import com.topjohnwu.superuser.nio.ExtendedFile;
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import org.apache.commons.io.IOUtils;
-import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,16 +85,13 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private UpdateInfo uUpdateInfo;
 
-    private final IUpdateCallback mUpdateCallback = new IUpdateCallback.Stub() {
+    private final IUpdateCallback engineCallback = new IUpdateCallback.Stub() {
         @Override
-        public void onPayloadApplicationComplete(int errorCode) {
-            Log.d("IUpdateService", "更新失败" + errorCode);
-            if (errorCode == UpdateEngine.ErrorCodeConstants.SUCCESS) {
-                if (TextUtils.isEmpty(uUpdateInfo.getDisplayid())) {
-                    mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"重启手机即可完成更新","恭喜你，更新成功了"));
-                } else {
-                    mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, uUpdateInfo.getDisplayid(),"重启手机即可完成更新"));
-                }
+        public void onPayloadApplicationComplete(int error_code) {
+            //activity.uUpdateServiceManager.closeAssetFileDescriptor();
+            if (error_code == UpdateEngineProxy.ErrorCodeConstants.SUCCESS) {
+                boolean hasDisplayid = !TextUtils.isEmpty(uUpdateInfo.getDisplayid());
+                mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, hasDisplayid ? uUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
                 flashAbl();
                 activity.uUpdateServiceManager.cancel();
@@ -106,20 +101,19 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
         @Override
-        public void onStatusUpdate(int status, float percent) {
-            Log.d("IUpdateService", "当前状态：" + status + ",当前进度：" + percent);
-            if (status == UpdateEngine.UpdateStatusConstants.DOWNLOADING) {
-                int progress = (int)(percent * 100.f);
-                mWaitDialog.show("正在更新 " + progress + " %", percent);
+        public void onStatusUpdate(int status_code, float percentage) {
+            if (status_code == UpdateEngineProxy.UpdateStatusConstants.DOWNLOADING) {
+                int progress = (int)(percentage * 100.f);
+                mWaitDialog.show("正在更新 " + progress + " %", percentage);
                 if (TextUtils.isEmpty(uUpdateInfo.getDisplayid())) {
                     mNotificationManager.notify(1, NotificationUtils.notifyProgress(activity,"正在更新系统","系统更新",100, progress,false));
                 } else {
                     mNotificationManager.notify(1, NotificationUtils.notifyProgress(activity, uUpdateInfo.getDisplayid(),"系统正在更新",100, progress,false));
                 }
-            } else if (status == UpdateEngine.UpdateStatusConstants.VERIFYING || status == UpdateEngine.UpdateStatusConstants.FINALIZING) {
+            } else if (status_code == UpdateEngineProxy.UpdateStatusConstants.VERIFYING || status_code == UpdateEngineProxy.UpdateStatusConstants.FINALIZING) {
                 mWaitDialog.show("正在校验分区数据");
                 mNotificationManager.notify(1, NotificationUtils.notifyProgress(activity,"正在校验分区数据","系统正在更新",0, 0,true));
-            } else if (status == UpdateEngine.UpdateStatusConstants.UPDATED_NEED_REBOOT) {
+            } else if (status_code == UpdateEngineProxy.UpdateStatusConstants.UPDATED_NEED_REBOOT) {
                 mWaitDialog.dismiss();
                 if (!flashAbl()) {
                     activity.uUpdateServiceManager.cancel();
@@ -137,13 +131,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     }
 
-    public static HomeFragment newInstance() {
-        HomeFragment fragment = new HomeFragment();
-        Bundle args = new Bundle();
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     private BaseActivity activity;
 
     @Override
@@ -159,47 +146,45 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         installDir = activity.getFilesDir().toString();
     }
 
-    @SuppressLint("SetTextI18n")
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
+        return inflater.inflate(layout.fragment_home, container, false);
+    }
+
+
+    @MainThread
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         TouchFeedback touchFeedback = TouchFeedback.newInstance(activity);
-        View inflate = inflater.inflate(layout.fragment_home, container, false);
-        WaveLoadingView waveLoadingView = inflate.findViewById(id.wave_view);
+        WaveLoadingView waveLoadingView = view.findViewById(R.id.wave_view);
         waveLoadingView.setWaveShiftRatio(0.75f);
-        View bgView = inflate.findViewById(id.bg_view);
-
-        activity.getMainHandler().postDelayed(()->{
-            bgView.setLayoutParams(new RelativeLayout.LayoutParams(-1, waveLoadingView.getHeight()));
-            new ColorChangeUtils(new int[] {
-                    Color.parseColor("#FFEF5361"),
-                    Color.parseColor("#FFFD6D4B"),
-                    Color.parseColor("#FFFFCF47"),
-                    Color.parseColor("#FF9FD661"),
-                    Color.parseColor("#FF3FD1AD"),
-                    Color.parseColor("#FF2CBDF4"),
-                    Color.parseColor("#FFAD8FEF"),
-                    Color.parseColor("#FFEE85C0")
-            }, bgView).startAnimation();
-        },0);
-
-
+        View bgView = view.findViewById(R.id.bg_view);
+        new ColorChangeUtils(activity, new int[] {
+                Color.parseColor("#FFEF5361"),
+                Color.parseColor("#FFFD6D4B"),
+                Color.parseColor("#FFFFCF47"),
+                Color.parseColor("#FF9FD661"),
+                Color.parseColor("#FF3FD1AD"),
+                Color.parseColor("#FF2CBDF4"),
+                Color.parseColor("#FFAD8FEF"),
+                Color.parseColor("#FFEE85C0")
+        }, bgView).startAnimation();
 
         //初始化设备信息
         AndroidInfo androidInfo = new AndroidInfo(activity);
-        inflate.<TextView>findViewById(id.main_device_info).setText("设备型号：" + androidInfo.getModel() + "    V-AB：" + (App.isVab ? App.currentSlot.replace("_","") : "FALSE"));
+        view.<TextView>findViewById(R.id.main_device_info).setText(MessageFormat.format("设备型号：{0}    V-AB：{1}", androidInfo.getModel(), App.isVab ? App.currentSlot.replace("_", "") : "FALSE"));
 
-        final TextView mainTips = inflate.findViewById(id.main_tips);
-        mainTips.setText(getClickableHtml(activity.getString(string.main_tips)));
+        TextView mainTips = view.findViewById(R.id.main_tips);
+        mainTips.setText(getClickableHtml(activity.getString(R.string.main_tips)));
         mainTips.setMovementMethod(LinkMovementMethod.getInstance());
 
-        touchFeedback.setOnFeedBackListener(this, inflate.findViewById(id.help_button));
-        touchFeedback.setOnFeedBackListener(this, inflate.findViewById(id.waring_button));
-        touchFeedback.setOnFeedBackListener(this, inflate.findViewById(id.start_button));
-        touchFeedback.setOnFeedBackListener(this, inflate.findViewById(id.download_button));
-        touchFeedback.setOnFeedBackListener(this, inflate.findViewById(id.home_tips_card));
-        return inflate;
+        touchFeedback.setOnFeedBackListener(this, view.findViewById(R.id.help_button));
+        touchFeedback.setOnFeedBackListener(this, view.findViewById(R.id.waring_button));
+        touchFeedback.setOnFeedBackListener(this, view.findViewById(R.id.start_button));
+        touchFeedback.setOnFeedBackListener(this, view.findViewById(R.id.download_button));
+        touchFeedback.setOnFeedBackListener(this, view.findViewById(R.id.home_tips_card));
     }
+
 
     public void setLinkClickable(SpannableStringBuilder clickableHtml, URLSpan urlSpan) {
         int start = clickableHtml.getSpanStart(urlSpan);
@@ -208,7 +193,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         ClickableSpan clickableSpan = new ClickableSpan() {
             @Override
             public void onClick(@NonNull View widget) {
-                if(urlSpan.getURL()!=null){
+                if (urlSpan.getURL()!= null) {
                     Intent intent = new Intent();
                     intent.setAction("android.intent.action.VIEW");
                     intent.setData(Uri.parse(urlSpan.getURL()));
@@ -223,13 +208,31 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         Spanned spannedHtml = Html.fromHtml(text, Html.FROM_HTML_MODE_LEGACY);
         SpannableStringBuilder clickableHtmlBuilder = new SpannableStringBuilder(spannedHtml);
         URLSpan[] urls = clickableHtmlBuilder.getSpans(0, spannedHtml.length(), URLSpan.class);
-        for (final URLSpan span : urls){
+        for (URLSpan span : urls){
             setLinkClickable(clickableHtmlBuilder, span);
         }
         return clickableHtmlBuilder;
     }
 
     private boolean flash_image(String img, String block) {
+        /*try {
+            ExtendedFile bootBlock  = remoteFS.getFile(img);
+            if (!bootBlock.exists()) {
+                return false;
+            }
+            ExtendedFile bootBackup = remoteFS.getFile(block);
+            bootBackup.setWritable(true);
+            if (!bootBackup.canWrite()) {
+                return false;
+            }
+            InputStream in = bootBlock.newInputStream();
+            OutputStream out = bootBackup.newOutputStream();
+            return IOUtils.copy(in, out) > 0;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }*/
+
         List<String> out = shell.newJob()
                 .add("flash_image '" + img + "' '" + block + "'")
                 .add("echo $?")
@@ -241,6 +244,8 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
     private boolean extract_image(String img, String block) {
+        if (remoteFS == null)
+            remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
         try {
             ExtendedFile bootBlock  = remoteFS.getFile(img);
             if (!bootBlock.exists()) {
@@ -275,7 +280,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         return true;
     }
 
-    @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(View view) {
         int id = view.getId();
@@ -304,6 +308,16 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                         .show();
                 return;
             }
+
+            if (!activity.uUpdateServiceManager.isValid()) {
+                MessageDialog.build()
+                        .setTitle("温馨提示")
+                        .setMessage("当前设备无法找到服务，请联系开发者尝试解决~")
+                        .setOkButton("知道了")
+                        .show();
+                return;
+            }
+
             NotificationManagerCompat notification = NotificationManagerCompat.from(activity);
             boolean isEnabled = notification.areNotificationsEnabled();
             if (!App.isVab){
@@ -346,49 +360,41 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
 
     @Override
-    public void onLongClick(View view) {
+    public void onLongClick(View view) { }
 
+
+    private void showErrorDialog(CharSequence title, CharSequence message) {
+        WaitDialog.dismiss();
+        MessageDialog.show(title,message,"我知道了");
     }
 
     private void startUpdate(String File) {
         uUpdateInfo = new UpdateParser(File).parse();
-        Log.d("更新助手",uUpdateInfo.getOffset() + ":"+uUpdateInfo.getSize());
         if (uUpdateInfo.getHeaderKeyValuePairs() == null || uUpdateInfo.getHeaderKeyValuePairs().length == 0) {
-            WaitDialog.dismiss();
-            MessageDialog.show("更新失败","更新包不完整，请重新下载","我知道了");
+            showErrorDialog("更新失败","更新包不完整，请重新下载");
         } else if (uUpdateInfo.getType() != -1 && uUpdateInfo.getType() != 1) {
-            WaitDialog.dismiss();
-            MessageDialog.show("更新失败","更新包非全量包，请下载全量包","我知道了");
+            showErrorDialog("更新失败","更新包非全量包，请下载全量包");
         }
         else {
-            if (!TextUtils.isEmpty(uUpdateInfo.getFlymeid())) {
-                if (!uUpdateInfo.getFlymeid().equals(App.flymemodel)) {
-                    MessageDialog.build()
-                            .setTitle("温馨提示")
-                            .setMessage("检测到选择的全量包是: " + uUpdateInfo.getBuildInfo() + ", 与您的设备不符，是否继续更新")
-                            .setOkButton("继续",(baseDialog, v) -> {
-                                if (!activity.uUpdateServiceManager.startUpdateSystem(uUpdateInfo, mUpdateCallback)){
-                                    WaitDialog.dismiss();
-                                    MessageDialog.show("更新失败","更新服务错误，请重试","我知道了");
-                                }
-                                return false;
-                            })
-                            .setCancelButton("取消")
-                            .show();
-                    return;
-                }
+            if (!TextUtils.isEmpty(uUpdateInfo.getFlymeid()) && !uUpdateInfo.getFlymeid().equals(App.flymemodel)) {
+                MessageDialog.build()
+                        .setTitle("温馨提示")
+                        .setMessage("检测到选择的全量包是: " + uUpdateInfo.getBuildInfo() + ", 与您的设备不符，是否继续更新")
+                        .setOkButton("继续",(baseDialog, v) -> {
+                            if (!activity.uUpdateServiceManager.startUpdateSystem(uUpdateInfo, engineCallback)){
+                                showErrorDialog("更新失败","更新服务错误，请重试");
+                            }
+                            return false;
+                        })
+                        .setCancelButton("取消")
+                        .show();
+                return;
             }
-            if (!activity.uUpdateServiceManager.startUpdateSystem(uUpdateInfo, mUpdateCallback)){
-                WaitDialog.dismiss();
-                MessageDialog.show("更新失败","更新服务错误，请重试","我知道了");
+
+            if (!activity.uUpdateServiceManager.startUpdateSystem(uUpdateInfo, engineCallback)){
+                showErrorDialog("更新失败","更新服务错误，请重试");
             }
         }
-    }
-
-    private void initRemoteFS() {
-        if (remoteFS != null)
-            return;
-        remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
     }
 
     private void reboot() {
@@ -397,7 +403,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private void patchMagisk() {
         WaitDialog.show("正在安装 Magisk ...");
-        initRemoteFS();
         String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
         for (String file: envList) {
             if (!remoteFS.getFile("/data/adb/magisk/" + file).exists()) {
@@ -472,22 +477,22 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         showRebootDialog("安装成功","安装到未使用卡槽完成");
     }
 
-    // https://github.com/bmax121/KernelPatch/releases/download/0.10.0/kpimg-android
-    // https://github.com/bmax121/KernelPatch/releases/download/0.10.0/kptools-android
     private void patchAPatch(String SuperKey) {
         WaitDialog.show("开始安装 APatch ...");
 
-        String rep = OkHttps.sync("https://api.github.com/repos/bmax121/KernelPatch/releases")
+        // 这里使用 Github 接口，获取 releases 最新版本号
+        String rep = OkHttps.sync("https://api.github.com/repos/bmax121/KernelPatch/releases/latest")
                 .get()
                 .getBody().toString();
+
+
         String lastTag = "";
         try {
-            JSONArray jsonArray = new JSONArray(rep);
-            lastTag = jsonArray.getJSONObject(0).getString("name");
+            JSONObject jsonObject = new JSONObject(rep);
+            lastTag = jsonObject.getString("tag_name");
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         if (TextUtils.isEmpty(lastTag)) {
             showRebootDialog("安装失败","APatch 版本获取失败，请自行操作");
             return;
@@ -527,8 +532,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         // 读取当前分区，用来判断第二分区
         String slot = App.currentSlot.equals("_a") ? "_b" : "_a";
 
-        initRemoteFS();
-
         // 提取第二分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/boot" + slot;
 
@@ -563,12 +566,16 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
     private boolean keyChecked(String skey) {
+        boolean isDigit = false;
+        boolean isLetter = false;
         for (int i = 0; i < skey.length(); i++) {
             char ch = skey.charAt(i);
-            if (!Character.isDigit(ch) && !Character.isLetter(ch))
-                return false;
+            if (Character.isDigit(ch))
+                isDigit = true;
+            if (Character.isLetter(ch))
+                isLetter = true;
         }
-        return true;
+        return isDigit && isLetter && skey.matches("^[a-zA-Z0-9]+$");
     }
 
     private void updateSuccess() {
@@ -597,7 +604,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                             activity.getASynHandler().post(this::patchKernelSU);
                             return false;
                         case 2:
-                            new InputDialog("设定超级密钥", "内核补丁的唯一密钥", "确定")
+                            new InputDialog("设定超级密钥", "内核补丁的唯一密钥，密钥长度最少8位数，且最少含有一位字母", "确定")
                                     .setCancelable(false)
                                     .setInputHintText("请输入超级密钥")
                                     .setOkButton((baseDialog, v, inputStr) -> {
@@ -611,7 +618,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                                         }
 
                                         if (!keyChecked(inputStr)) {
-                                            PopTip.build().setMessage("超级密钥只允许存在数字字母").iconError().show();
+                                            PopTip.build().setMessage("超级密钥格式错误，请检查是否只含有数字和字母").iconError().show();
                                             return true;
                                         }
 

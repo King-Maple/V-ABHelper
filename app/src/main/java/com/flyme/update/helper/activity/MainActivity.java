@@ -9,12 +9,12 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.flyme.update.helper.BuildConfig;
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.fragment.AboutFragment;
 import com.flyme.update.helper.fragment.HomeFragment;
@@ -41,6 +41,8 @@ public class MainActivity extends BaseActivity {
     private static final int MSG_WHAT_REQUEST_ROOT_PERMISSION = 0;
     private static final int MSG_WHAT_NO_ROOT_PERMISSON = 1;
 
+    private Shell SHELL;
+
 
     @SuppressLint("HandlerLeak")
     private final Handler mHandler = new Handler(Looper.getMainLooper()) {
@@ -61,8 +63,8 @@ public class MainActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setDoubleTouchClose(true);
-        fragments.add(HomeFragment.newInstance());
-        fragments.add(AboutFragment.newInstance());
+        fragments.add(new HomeFragment());
+        fragments.add(new AboutFragment());
         replaceFragment(fragments.get(0));
         NavigationBar navigationBar = findViewById(R.id.main_navigation);
         navigationBar.bindData(new String[]{ "开始", "关于" }, new int[] { R.mipmap.ic_home, R.mipmap.ic_settings });
@@ -96,11 +98,21 @@ public class MainActivity extends BaseActivity {
         fragmentTransaction.commit();
     }
 
+    private static Shell createRootShell() {
+        Shell.enableVerboseLogging = BuildConfig.DEBUG;
+        Shell.Builder builder = Shell.Builder.create();
+        try {
+            return builder.build("/system/bin/su");
+        } catch (Throwable e) {
+            e.printStackTrace();
+            return builder.build("sh");
+        }
+    }
 
     private void openService() {
         WaitDialog.show(MainActivity.this,"正常启动服务...");
-        Intent rootIntent = new Intent(this, UpdateService.class);
-        RootService.bind(rootIntent, new RootConnect());
+        Intent intent = new Intent(this, UpdateService.class);
+        RootService.bind(intent, new RootConnect());
     }
 
     class RootConnect implements ServiceConnection {
@@ -110,9 +122,8 @@ public class MainActivity extends BaseActivity {
             if (mUpdateService != null) {
                 uUpdateServiceManager = new UpdateServiceManager(mUpdateService);
                 WaitDialog.dismiss(MainActivity.this);
-                //TipDialog.show(MainActivity.this,"启动服务完成!", WaitDialog.TYPE.SUCCESS);
             } else {
-                TipDialog.show(MainActivity.this,"启动服务失败!", WaitDialog.TYPE.SUCCESS);
+                TipDialog.show(MainActivity.this,"启动服务失败!", WaitDialog.TYPE.ERROR);
             }
         }
 

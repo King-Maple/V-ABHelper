@@ -18,13 +18,6 @@ import com.flyme.update.helper.widget.TouchFeedback;
 
 public class AboutFragment extends Fragment implements TouchFeedback.OnFeedBackListener {
 
-    public static AboutFragment newInstance() {
-        AboutFragment fragment = new AboutFragment();
-        Bundle args = new Bundle();
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

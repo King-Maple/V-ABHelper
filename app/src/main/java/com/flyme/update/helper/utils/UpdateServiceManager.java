@@ -61,4 +61,20 @@ public class UpdateServiceManager {
             return null;
         }
     }
+
+    public int GetKsuVersion() {
+        try {
+            return this.uNativeService.GetKsuVersion();
+        } catch (RemoteException e) {
+            return -1;
+        }
+    }
+
+    public boolean KsuIsLkmMode() {
+        try {
+            return this.uNativeService.KsuIsLkmMode();
+        } catch (RemoteException e) {
+            return false;
+        }
+    }
 }

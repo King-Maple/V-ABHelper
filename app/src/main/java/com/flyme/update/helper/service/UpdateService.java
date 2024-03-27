@@ -5,12 +5,14 @@ import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.UpdateEngineCallback;
 
 import androidx.annotation.NonNull;
 
 import com.flyme.update.helper.interfaces.IUpdateCallback;
+import com.flyme.update.helper.utils.Natives;
 import com.flyme.update.helper.utils.UpdateEngineProxy;
 import com.flyme.update.helper.utils.UpdateInfo;
 import com.topjohnwu.superuser.ipc.RootService;
@@ -20,6 +22,11 @@ import java.io.File;
 import java.io.IOException;
 
 public class UpdateService extends RootService {
+
+    static {
+        if (Process.myUid() == 0)
+            System.loadLibrary("kernelsu");
+    }
 
     @Override
     public IBinder onBind(@NonNull Intent intent) {
@@ -111,6 +118,21 @@ public class UpdateService extends RootService {
         @Override
         public IBinder getFileSystemService() {
             return FileSystemManager.getService();
+        }
+
+        @Override
+        public int GetKsuVersion() {
+            return Natives.getVersion();
+        }
+
+        @Override
+        public boolean KsuisSafeMode() {
+            return Natives.isSafeMode();
+        }
+
+        @Override
+        public boolean KsuIsLkmMode() {
+            return Natives.isLkmMode();
         }
 
     }

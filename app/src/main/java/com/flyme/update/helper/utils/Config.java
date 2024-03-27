@@ -10,4 +10,10 @@ public class Config {
     public static boolean keepEnc = false;
 
     public static boolean patchVbmeta = false;
+
+    public static boolean isVab;
+
+    public static String currentSlot;
+
+    public static String flymemodel;
 }

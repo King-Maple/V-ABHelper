@@ -15,8 +15,8 @@ android {
         minSdk = 30
         @SuppressLint("ExpiredTargetSdkVersion")
         targetSdk = 30
-        versionCode = 153
-        versionName = "1.5.3"
+        versionCode = 154
+        versionName = "1.5.4"
 
         renderscriptTargetApi = 21
         renderscriptSupportModeEnabled = true
@@ -42,6 +42,12 @@ android {
         aidl =  true
         buildConfig = true
         compose = true
+    }
+
+    externalNativeBuild {
+        cmake {
+            path("src/main/cpp/CMakeLists.txt")
+        }
     }
 
 }

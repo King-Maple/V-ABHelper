@@ -29,7 +29,6 @@ public class ShellInit extends Shell.Initializer {
                 .add(bashrc)
                 .add("app_init")
                 .exec();
-
         Config.isSAR = getBool(shell, "SYSTEM_ROOT");
         Config.recovery = getBool(shell, "RECOVERYMODE");
         Config.keepVerity = getBool(shell, "KEEPVERITY");

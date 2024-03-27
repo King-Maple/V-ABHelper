@@ -30,7 +30,6 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 
 import com.ejlchina.okhttps.OkHttps;
-import com.flyme.update.helper.App;
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.activity.BaseActivity;
 import com.flyme.update.helper.interfaces.IUpdateCallback;
@@ -41,6 +40,7 @@ import com.flyme.update.helper.utils.NotificationUtils;
 import com.flyme.update.helper.utils.UpdateEngineProxy;
 import com.flyme.update.helper.utils.UpdateInfo;
 import com.flyme.update.helper.utils.UpdateParser;
+import com.flyme.update.helper.utils.Utils;
 import com.flyme.update.helper.widget.TouchFeedback;
 import com.kongzue.dialogx.dialogs.BottomDialog;
 import com.kongzue.dialogx.dialogs.BottomMenu;
@@ -127,9 +127,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     };
 
 
-    public HomeFragment() {
-
-    }
 
     private BaseActivity activity;
 
@@ -172,7 +169,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         //初始化设备信息
         AndroidInfo androidInfo = new AndroidInfo(activity);
-        view.<TextView>findViewById(R.id.main_device_info).setText(MessageFormat.format("设备型号：{0}    V-AB：{1}", androidInfo.getModel(), App.isVab ? App.currentSlot.replace("_", "") : "FALSE"));
+        view.<TextView>findViewById(R.id.main_device_info).setText(MessageFormat.format("设备型号：{0}    V-AB：{1}", androidInfo.getModel(), Config.isVab ? Config.currentSlot.replace("_", "") : "FALSE"));
 
         TextView mainTips = view.findViewById(R.id.main_tips);
         mainTips.setText(getClickableHtml(activity.getString(R.string.main_tips)));
@@ -215,24 +212,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
     private boolean flash_image(String img, String block) {
-        /*try {
-            ExtendedFile bootBlock  = remoteFS.getFile(img);
-            if (!bootBlock.exists()) {
-                return false;
-            }
-            ExtendedFile bootBackup = remoteFS.getFile(block);
-            bootBackup.setWritable(true);
-            if (!bootBackup.canWrite()) {
-                return false;
-            }
-            InputStream in = bootBlock.newInputStream();
-            OutputStream out = bootBackup.newOutputStream();
-            return IOUtils.copy(in, out) > 0;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }*/
-
+        //ShellUtils.fastCmdResult("blockdev --setrw " + block);
         List<String> out = shell.newJob()
                 .add("flash_image '" + img + "' '" + block + "'")
                 .add("echo $?")
@@ -269,11 +249,11 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
     private boolean flashAbl() {
-        if (App.flymemodel.equals("M2391") || App.flymemodel.equals("M2381")) {
-            if (!flash_image(activity.getFilesDir().toString() + "/" + App.flymemodel + ".img","/dev/block/by-name/abl_a")) {
+        if (Config.flymemodel.equals("M2391") || Config.flymemodel.equals("M2381")) {
+            if (!flash_image(activity.getFilesDir().toString() + "/" + Config.flymemodel + ".img","/dev/block/by-name/abl_a")) {
                 return false;
             }
-            return flash_image(activity.getFilesDir().toString() + "/" + App.flymemodel + ".img","/dev/block/by-name/abl_b");
+            return flash_image(activity.getFilesDir().toString() + "/" + Config.flymemodel + ".img","/dev/block/by-name/abl_b");
         }
         return true;
     }
@@ -318,7 +298,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
             NotificationManagerCompat notification = NotificationManagerCompat.from(activity);
             boolean isEnabled = notification.areNotificationsEnabled();
-            if (!App.isVab){
+            if (!Config.isVab){
                 MessageDialog.build()
                         .setTitle("温馨提示")
                         .setMessage("本软件只支持V-AB分区的设备进行ROM刷写，不支持当前设备~")
@@ -374,7 +354,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             showErrorDialog("更新失败","更新包非全量包，请下载全量包");
         }
         else {
-            if (!TextUtils.isEmpty(uUpdateInfo.getFlymeid()) && !uUpdateInfo.getFlymeid().equals(App.flymemodel)) {
+            if (!TextUtils.isEmpty(uUpdateInfo.getFlymeid()) && !uUpdateInfo.getFlymeid().equals(Config.flymemodel)) {
                 MessageDialog.build()
                         .setTitle("温馨提示")
                         .setMessage("检测到选择的全量包是: " + uUpdateInfo.getBuildInfo() + ", 与您的设备不符，是否继续更新")
@@ -395,16 +375,14 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
     }
 
-    private void reboot() {
-        ShellUtils.fastCmd("/system/bin/svc power reboot || /system/bin/reboot");
-    }
+
 
     private void patchMagisk() {
         WaitDialog.show("正在安装 Magisk ...");
         String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
         for (String file: envList) {
             if (!remoteFS.getFile("/data/adb/magisk/" + file).exists()) {
-                showRebootDialog("修补失败","面具环境不全，请自行操作");
+                showRebootDialog("修补失败","Magisk 环境不全，请自行操作");
                 return;
             }
         }
@@ -421,12 +399,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
         // 读取当前分区，用来判断第二分区
-        String slot = App.currentSlot.equals("_a") ? "_b" : "_a";
+        String next_slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
 
         // 提取第二分区的boot镜像
-        String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + slot;
+        String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
         if (!remoteFS.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
-            srcBoot = "/dev/block/bootdevice/by-name/boot" + slot;
+            srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 
         new File(installDir + "/boot.img").delete();
@@ -462,16 +440,67 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
 
+    private static int ksuversion = -1;
+
     private void patchKernelSU() {
         WaitDialog.show("正在安装 KernelSu...");
-
+        if (ksuversion == -1)
+            ksuversion = activity.uUpdateServiceManager.GetKsuVersion();
+        boolean isLkmMode = activity.uUpdateServiceManager.KsuIsLkmMode();
         // 读取当前分区，用来判断第二分区
-        String slot = App.currentSlot.equals("_a") ? "_b" : "_a";
+        String next_slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
 
-        if (!flash_image("/dev/block/bootdevice/by-name/boot" + App.currentSlot, "/dev/block/bootdevice/by-name/boot" + slot)) {
+        // 非 LKM 模式直接提取当前分区刷入第二分区
+        if (!isLkmMode && !flash_image("/dev/block/bootdevice/by-name/boot" + Config.currentSlot, "/dev/block/bootdevice/by-name/boot" + next_slot)) {
             showRebootDialog("安装失败","刷入镜像失败，请自行操作");
             return;
         }
+
+
+        if (!remoteFS.getFile("/data/adb/ksud").exists()) {
+            showRebootDialog("修补失败","KernelSu 环境不全，请自行操作");
+            return;
+        }
+
+
+        String currentKmi = ShellUtils.fastCmd("/data/adb/ksud boot-info current-kmi");
+        if (!TextUtils.isEmpty(currentKmi)) {
+            showRebootDialog("修补失败","获取当前 KMI 失败，请自行操作");
+            return;
+        }
+
+        //ksud boot-patch -b <boot.img> --kmi android13-5.10
+
+        // 提取第二分区的boot镜像
+        String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
+        if (!remoteFS.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+            srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
+        }
+
+        new File(installDir + "/boot.img").delete();
+        new File(installDir + "/kernel_patch.img").delete();
+
+        if (!extract_image(srcBoot,installDir + "/boot.img")) {
+            showRebootDialog("安装失败","镜像分区提取错误，请自行操作");
+            return;
+        }
+
+        List<String> stdout = new ArrayList<>();
+        boolean isSuccess = shell.newJob()
+                .add("/data/adb/ksud boot-patch --magiskboot " + installDir +  "/magiskboot -b " + installDir + "/boot.img" + " --kmi " + currentKmi + " -o " + installDir + "/kernel_patch.img")
+                .to(stdout, stdout)
+                .exec()
+                .isSuccess();
+        if (!isSuccess) {
+            showErrorDialog(String.join("\n", stdout));
+            return;
+        }
+
+        if (!flash_image(installDir + "/magisk_patch.img", srcBoot)) {
+            showRebootDialog("安装失败","刷入镜像失败，请自行操作");
+            return;
+        }
+
         showRebootDialog("安装成功","安装到未使用卡槽完成");
     }
 
@@ -528,7 +557,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
         // 读取当前分区，用来判断第二分区
-        String slot = App.currentSlot.equals("_a") ? "_b" : "_a";
+        String slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
 
         // 提取第二分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/boot" + slot;
@@ -631,7 +660,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                     return false;
                 })
                 .setOkButton("重启", (OnDialogButtonClickListener<BottomDialog>) (dialog, v) -> {
-                    reboot();
+                    Utils.reboot();
                     return false;
                 })
                 .setCancelButton("取消", (OnDialogButtonClickListener<BottomDialog>) (dialog, v) -> {
@@ -647,7 +676,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 .setMessage(message)
                 .setOkButton("重启手机",(baseDialog, v) -> {
                     baseDialog.dismiss();
-                    reboot();
+                    Utils.reboot();
                     return false;
                 })
                 .setCancelButton("稍后重启")
@@ -660,7 +689,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 .setTitle("修补失败")
                 .setMessage("运行修补脚本失败，是否查看错误信息")
                 .setOkButton("重启",(baseDialog, v) -> {
-                    reboot();
+                    Utils.reboot();
                     return false;
                 })
                 .setCancelButton("查看",(baseDialog, v) -> {

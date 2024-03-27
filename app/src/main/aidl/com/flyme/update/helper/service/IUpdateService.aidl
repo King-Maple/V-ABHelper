@@ -15,4 +15,10 @@ interface IUpdateService {
     void cancel();
 
     IBinder getFileSystemService();
+
+    int GetKsuVersion();
+
+    boolean KsuisSafeMode();
+
+    boolean KsuIsLkmMode();
 }

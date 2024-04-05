@@ -94,9 +94,9 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, hasDisplayid ? uUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
                 flashAbl();
-                activity.uUpdateServiceManager.cancel();
-                TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
-                mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
+                //activity.uUpdateServiceManager.cancel();
+                TipDialog.show("更新失败!" , WaitDialog.TYPE.ERROR);
+                mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了，错误代号：" + error_code));
             }
         }
 
@@ -447,6 +447,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         if (ksuversion == -1)
             ksuversion = activity.uUpdateServiceManager.GetKsuVersion();
         boolean isLkmMode = activity.uUpdateServiceManager.KsuIsLkmMode();
+
         // 读取当前分区，用来判断第二分区
         String next_slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
 
@@ -457,15 +458,9 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
 
+        //检查 ksud 文件是否存在
         if (!remoteFS.getFile("/data/adb/ksud").exists()) {
             showRebootDialog("修补失败","KernelSu 环境不全，请自行操作");
-            return;
-        }
-
-
-        String currentKmi = ShellUtils.fastCmd("/data/adb/ksud boot-info current-kmi");
-        if (!TextUtils.isEmpty(currentKmi)) {
-            showRebootDialog("修补失败","获取当前 KMI 失败，请自行操作");
             return;
         }
 
@@ -477,17 +472,18 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 
-        new File(installDir + "/boot.img").delete();
-        new File(installDir + "/kernel_patch.img").delete();
+        ShellUtils.fastCmd("rm -r " + installDir + "/*.img");
 
         if (!extract_image(srcBoot,installDir + "/boot.img")) {
             showRebootDialog("安装失败","镜像分区提取错误，请自行操作");
             return;
         }
 
+
         List<String> stdout = new ArrayList<>();
         boolean isSuccess = shell.newJob()
-                .add("/data/adb/ksud boot-patch --magiskboot " + installDir +  "/magiskboot -b " + installDir + "/boot.img" + " --kmi " + currentKmi + " -o " + installDir + "/kernel_patch.img")
+                .add("cd " + installDir)
+                .add("/data/adb/ksud boot-patch --magiskboot " + installDir +  "/magiskboot -b " + installDir + "/boot.img")
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();
@@ -496,7 +492,14 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             return;
         }
 
-        if (!flash_image(installDir + "/magisk_patch.img", srcBoot)) {
+
+        String patch_img = ShellUtils.fastCmd("cd " + installDir + " & ls kernelsu_boot_*.img");
+        if (TextUtils.isEmpty(patch_img)) {
+            showRebootDialog("安装失败","获取修补文件错误，请自行操作");
+            return;
+        }
+
+        if (!flash_image(installDir + "/" + patch_img, srcBoot)) {
             showRebootDialog("安装失败","刷入镜像失败，请自行操作");
             return;
         }

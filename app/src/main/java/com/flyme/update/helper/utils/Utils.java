@@ -24,4 +24,8 @@ public class Utils {
         }
         return "";
     }
+
+    public static boolean isAbDevice() {
+        return Utils.getprop("ro.build.ab_update").equals("true");
+    }
 }

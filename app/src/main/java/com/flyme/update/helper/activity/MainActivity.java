@@ -103,12 +103,10 @@ public class MainActivity extends BaseActivity {
     }
 
     private static Shell createRootShell() {
-        Shell.enableVerboseLogging = BuildConfig.DEBUG;
         Shell.Builder builder = Shell.Builder.create();
         try {
-            return builder.build("/system/bin/su");
+            return builder.build("su");
         } catch (Throwable e) {
-            e.printStackTrace();
             return builder.build("sh");
         }
     }

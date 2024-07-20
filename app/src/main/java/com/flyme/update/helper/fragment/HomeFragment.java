@@ -227,6 +227,8 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private boolean extract_image(String img, String block) {
         try {
+            if (remoteFS == null)
+                remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
             ExtendedFile bootBlock  = remoteFS.getFile(img);
             if (!bootBlock.exists()) {
                 return false;
@@ -639,8 +641,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private void updateSuccess() {
         WaitDialog.dismiss();
-        if (remoteFS == null)
-            remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
         BottomMenu.show("更新成功", "恭喜你看到我了，现在轮到你选择保留 Root 的方式了，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSu", "APatch"})
                 .setOnIconChangeCallBack(new OnIconChangeCallBack<BottomMenu>(true) {
                     @Override

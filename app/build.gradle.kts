@@ -15,8 +15,8 @@ android {
         minSdk = 30
         @SuppressLint("ExpiredTargetSdkVersion")
         targetSdk = 30
-        versionCode = 155
-        versionName = "1.5.5"
+        versionCode = 200
+        versionName = "2.0.0"
 
         renderscriptTargetApi = 21
         renderscriptSupportModeEnabled = true
@@ -66,7 +66,7 @@ dependencies {
     compileOnly("de.robv.android.xposed:api:82")
     implementation("org.luckypray:DexKit:1.1.6")
 
-    val libsuVersion = "5.2.2"
+    val libsuVersion = "6.0.0"
     implementation("com.github.topjohnwu.libsu:core:${libsuVersion}")
     implementation("com.github.topjohnwu.libsu:service:${libsuVersion}")
     implementation("com.github.topjohnwu.libsu:nio:${libsuVersion}")
@@ -81,11 +81,11 @@ dependencies {
 
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
 
-    val dialogx_version = "0.0.49"
+    val dialogx_version = "0.0.50.beta17.1"
     implementation("com.github.kongzue.DialogX:DialogX:${dialogx_version}")
     implementation("com.github.kongzue.DialogX:DialogXKongzueStyle:${dialogx_version}")
     implementation("com.github.kongzue.DialogX:DialogXMaterialYou:${dialogx_version}")
-    implementation("com.github.kongzue.DialogXSample:FileDialog:0.0.12")
+    implementation("com.github.kongzue.DialogXSample:FileDialog:0.0.14")
 
     implementation("com.github.getActivity:XXPermissions:18.0")
 

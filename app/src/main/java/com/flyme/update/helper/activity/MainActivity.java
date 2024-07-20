@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -50,7 +51,11 @@ public class MainActivity extends BaseActivity {
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             if (msg.what == MSG_WHAT_REQUEST_ROOT_PERMISSION) {
-                openService();
+                try {
+                    openService();
+                } catch (IOException e) {
+                    TipDialog.show(MainActivity.this,"启动服务失败!", WaitDialog.TYPE.ERROR);
+                }
             } else if (msg.what == MSG_WHAT_NO_ROOT_PERMISSON) {
                 TipDialog.show(MainActivity.this,"请授予超级权限后使用!", WaitDialog.TYPE.ERROR);
             }
@@ -71,14 +76,13 @@ public class MainActivity extends BaseActivity {
         navigationBar.setPositionListener((view, position) -> replaceFragment(fragments.get(position)));
         WaitDialog.show(MainActivity.this,"正在检测超级权限...");
         getASynHandler().postDelayed(() -> {
-            if (Boolean.FALSE.equals(Shell.isAppGrantedRoot())) {
+            SHELL = createRootShell();
+            if (!Boolean.TRUE.equals(SHELL.isAppGrantedRoot())) {
                 mHandler.sendEmptyMessage(MSG_WHAT_NO_ROOT_PERMISSON);
             } else {
                 try {
                     ShellUtils.fastCmd("rm -r " + getFilesDir().toString());
                     ShellUtils.fastCmd("mkdir " + getFilesDir().toString());
-                    FileUtils.copyToFile(getAssets().open("M2391"), new File(getFilesDir(),"M2391.img"));
-                    FileUtils.copyToFile(getAssets().open("M2381"), new File(getFilesDir(),"M2381.img"));
                     FileUtils.copyToFile(getAssets().open("magiskboot"), new File(getFilesDir(),"magiskboot"));
                     FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch), new File(getFilesDir(),"apatch.sh"));
                     ShellUtils.fastCmd("chmod -R 777 " + getFilesDir().toString());
@@ -109,10 +113,12 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    private void openService() {
+    private void openService() throws IOException {
         WaitDialog.show(MainActivity.this,"正常启动服务...");
         Intent intent = new Intent(this, UpdateService.class);
-        RootService.bind(intent, new RootConnect());
+        Shell.Task task = UpdateService.bindOrTask(intent, Shell.EXECUTOR, new RootConnect());
+        if (task != null)
+            SHELL.execTask(task);
     }
 
     class RootConnect implements ServiceConnection {

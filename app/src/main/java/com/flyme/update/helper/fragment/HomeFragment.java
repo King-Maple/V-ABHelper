@@ -18,6 +18,7 @@ import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,12 +66,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 import me.itangqi.waveloadingview.WaveLoadingView;
 
+/** @noinspection BooleanMethodIsAlwaysInverted*/
 public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackListener {
 
     private NotificationManager mNotificationManager;
@@ -93,7 +96,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 boolean hasDisplayid = !TextUtils.isEmpty(uUpdateInfo.getDisplayid());
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, hasDisplayid ? uUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
-                flashAbl();
                 //activity.uUpdateServiceManager.cancel();
                 TipDialog.show("更新失败!" , WaitDialog.TYPE.ERROR);
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了，错误代号：" + error_code));
@@ -115,7 +117,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 mNotificationManager.notify(1, NotificationUtils.notifyProgress(activity,"正在校验分区数据","系统正在更新",0, 0,true));
             } else if (status_code == UpdateEngineProxy.UpdateStatusConstants.UPDATED_NEED_REBOOT) {
                 mWaitDialog.dismiss();
-                if (!flashAbl()) {
+                if (!modifyPrivate()) {
                     activity.uUpdateServiceManager.cancel();
                     TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
                     mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
@@ -234,7 +236,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             OutputStream out = bootBackup.newOutputStream();
             return IOUtils.copy(in, out) > 0;
         } catch (IOException e) {
-            e.printStackTrace();
             return false;
         }
 /*        List<String> out = shell.newJob()
@@ -248,21 +249,49 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         return result.equals("0");*/
     }
 
-    private boolean flashAbl() {
-        if (Config.flymemodel.equals("M2391") || Config.flymemodel.equals("M2381")) {
-            if (!flash_image(activity.getFilesDir().toString() + "/" + Config.flymemodel + ".img","/dev/block/by-name/abl_a")) {
+   private static final byte[] bootloaderFlags = {
+            (byte)0x61, (byte)0x63, (byte)0x74, (byte)0x6F, (byte)0x72, (byte)0x79, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x6D,
+            (byte)0x54, (byte)0x65, (byte)0x73, (byte)0x74, (byte)0x33, (byte)0x2E, (byte)0x31, (byte)0x30, (byte)0x2E, (byte)0x37, (byte)0x2E, (byte)0x30
+    };
+
+
+    //修改 private 镜像 将不完美解锁方案变为完美
+    private boolean modifyPrivate() {
+        if (!Config.flymemodel.equals("M2391") && !Config.flymemodel.equals("M2381"))
+            return true;
+        try {
+            String srcImage = "/dev/block/bootdevice/by-name/private";
+            ShellUtils.fastCmd("rm -r " + installDir + "/*.img");
+            if (!extract_image(srcImage,installDir + "/private.img")) {
                 return false;
             }
-            return flash_image(activity.getFilesDir().toString() + "/" + Config.flymemodel + ".img","/dev/block/by-name/abl_b");
+            RandomAccessFile randomAccessFile = new RandomAccessFile(installDir + "/private.img", "rw");
+            int keySize = 0x14120 - 0x14000;
+            byte[] bootlodaerKey = new byte[keySize];
+            randomAccessFile.seek(0x14000);
+            randomAccessFile.read(bootlodaerKey);
+            if (bootlodaerKey[0] == 'L' && bootlodaerKey[1] == 'O' && bootlodaerKey[2] == 'C' && bootlodaerKey[3] == 'K') {
+                randomAccessFile.seek(0x14000);
+                randomAccessFile.write(new byte[keySize]);//填充 0
+                randomAccessFile.seek(0x11000);
+                randomAccessFile.write(bootlodaerKey);//把解锁数据移动到这里
+            }
+            randomAccessFile.seek(0x11105);
+            randomAccessFile.write(bootloaderFlags);//设置 mTest 标识，主要是这个
+            randomAccessFile.close();
+            return flash_image(installDir + "/private.img", srcImage);
+        } catch (IOException e) {
+            Log.d("modifyPrivate", e.toString());
+            return false;
         }
-        return true;
+
     }
 
     @Override
     public void onClick(View view) {
         int id = view.getId();
         if (id == R.id.download_button) {
-            updateSuccess();
+            modifyPrivate();
         }
 
         else if (id == R.id.help_button) {
@@ -493,7 +522,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
 
-        String patch_img = ShellUtils.fastCmd("cd " + installDir + " & ls kernelsu_boot_*.img");
+        String patch_img = ShellUtils.fastCmd("cd " + installDir + " & ls kernelsu_*.img");
         if (TextUtils.isEmpty(patch_img)) {
             showRebootDialog("安装失败","获取修补文件错误，请自行操作");
             return;

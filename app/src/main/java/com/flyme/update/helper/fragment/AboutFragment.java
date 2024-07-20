@@ -32,13 +32,14 @@ public class AboutFragment extends Fragment implements TouchFeedback.OnFeedBackL
         AndroidInfo androidInfo = new AndroidInfo(getContext());
         inflate.<TextView>findViewById(R.id.about_app_info).setText(getContext().getString(R.string.app_name) + "  V " + androidInfo.getVerName());
         inflate.<TextView>findViewById(R.id.tv_author).setText("你好，我是King丶枫岚");
-        inflate.<TextView>findViewById(R.id.tv_email).setText("1405125879@qq.com");
+        inflate.<TextView>findViewById(R.id.tv_email).setText("i@yowal.cn");
         touchFeedback.setOnFeedBackListener(this, inflate.findViewById(R.id.group));
         touchFeedback.setOnFeedBackListener(this, inflate.findViewById(R.id.email));
         touchFeedback.setOnFeedBackListener(this, inflate.findViewById(R.id.developer));
         touchFeedback.setOnFeedBackListener(this, inflate.findViewById(R.id.xiaoqian));
         touchFeedback.setOnFeedBackListener(this, inflate.findViewById(R.id.meizu));
         touchFeedback.setOnFeedBackListener(this, inflate.findViewById(R.id.lumyuan));
+        touchFeedback.setOnFeedBackListener(this, inflate.findViewById(R.id.yege));
         return inflate;
     }
 
@@ -51,7 +52,7 @@ public class AboutFragment extends Fragment implements TouchFeedback.OnFeedBackL
             qqIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(qqIntent);
         } else if (id == R.id.email) {
-            String[] mailto = { "1405125879@qq.com" };
+            String[] mailto = { "i@yowal.cn" };
             Intent sendIntent = new Intent(Intent.ACTION_SEND);
             String emailBody = "";
             sendIntent.setType("message/rfc822");
@@ -82,6 +83,12 @@ public class AboutFragment extends Fragment implements TouchFeedback.OnFeedBackL
             coolapkIntent.setClassName("com.coolapk.market", "com.coolapk.market.view.AppLinkActivity");
             coolapkIntent.setAction("android.intent.action.VIEW");
             coolapkIntent.setData(Uri.parse("http://www.coolapk.com/u/2073264"));
+            startActivity(coolapkIntent);
+        } else if (id == R.id.yege) {
+            Intent coolapkIntent = new Intent();
+            coolapkIntent.setClassName("com.coolapk.market", "com.coolapk.market.view.AppLinkActivity");
+            coolapkIntent.setAction("android.intent.action.VIEW");
+            coolapkIntent.setData(Uri.parse("http://www.coolapk.com/u/377020"));
             startActivity(coolapkIntent);
         }
 

@@ -15,12 +15,9 @@ public class LogActivity extends BaseActivity {
 
     private void defaultOkHandler(final TextView logView, View okButton) {
         logView.setText(getIntent().getStringExtra("CashStr"));
-        okButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String log = logView.getText().toString();
-                copyLog2Author(log);
-            }
+        okButton.setOnClickListener(v -> {
+            String log = logView.getText().toString();
+            copyLog2Author(log);
         });
     }
 

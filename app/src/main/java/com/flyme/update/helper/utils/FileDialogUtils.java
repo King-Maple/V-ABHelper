@@ -36,6 +36,8 @@ import com.kongzue.filedialog.interfaces.FileSelectCallBack;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class FileDialogUtils {
@@ -199,6 +201,7 @@ public class FileDialogUtils {
                                     public boolean onClick(BottomMenu dialog, CharSequence text, int index) {
                                         //记录已选择值
                                         sortType = index;
+                                        refreshFileList();
                                         return false;
                                     }
                                 })
@@ -212,35 +215,32 @@ public class FileDialogUtils {
 //                    btnSelect.setVisibility(View.INVISIBLE);
 //                }
 
-                dialog.setOnBackPressedListener(new OnBackPressedListener<FullScreenDialog>() {
-                    @Override
-                    public boolean onBackPressed(FullScreenDialog dialog) {
-                        if (!Environment.getExternalStorageDirectory().getPath().equals(path)) {
-                            if (path.contains("/")) {
-                                String[] folders = path.split("/");
-                                if (folders.length > 2) {
-                                    path = "";
-                                    for (int i = 0; i < folders.length - 1; i++) {
-                                        path = path + (i == 0 ? "" : "/") + folders[i];
-                                    }
-
-                                    Bitmap screenshot = screenshotView(listFile);
-                                    imgFileListScreenshot.setImageBitmap(screenshot);
-
-                                    imgFileListScreenshot.setVisibility(View.VISIBLE);
-                                    imgFileListScreenshot.setX(0);
-
-                                    refreshFileList();
-
-                                    listFile.setX(-listFile.getWidth());
-                                    imgFileListScreenshot.animate().setInterpolator(new DecelerateInterpolator(2f)).x(listFile.getWidth());
-                                    listFile.animate().setInterpolator(new DecelerateInterpolator(2f)).x(0);
+                dialog.setOnBackPressedListener(dialog1 -> {
+                    if (!Environment.getExternalStorageDirectory().getPath().equals(path)) {
+                        if (path.contains("/")) {
+                            String[] folders = path.split("/");
+                            if (folders.length > 2) {
+                                path = "";
+                                for (int i = 0; i < folders.length - 1; i++) {
+                                    path = path + (i == 0 ? "" : "/") + folders[i];
                                 }
+
+                                Bitmap screenshot = screenshotView(listFile);
+                                imgFileListScreenshot.setImageBitmap(screenshot);
+
+                                imgFileListScreenshot.setVisibility(View.VISIBLE);
+                                imgFileListScreenshot.setX(0);
+
+                                refreshFileList();
+
+                                listFile.setX(-listFile.getWidth());
+                                imgFileListScreenshot.animate().setInterpolator(new DecelerateInterpolator(2f)).x(listFile.getWidth());
+                                listFile.animate().setInterpolator(new DecelerateInterpolator(2f)).x(0);
                             }
-                            return false;
                         }
-                        return true;
+                        return false;
                     }
+                    return true;
                 });
 
                 loadFileList();
@@ -349,6 +349,7 @@ public class FileDialogUtils {
                             for (File f : listFiles) {
                                 FileBean fileBean = new FileBean();
                                 fileBean.lastModified = f.lastModified();
+                                fileBean.length = f.length();
                                 if (f.isDirectory()) {
                                     fileBean.Name = "/" + f.getName();
                                     folderArray.add(fileBean);
@@ -363,12 +364,35 @@ public class FileDialogUtils {
                             FileBean fileBean = new FileBean();
                             fileBean.Name = "...";
                             fileBean.lastModified = 0;
+                            fileBean.length = 0;
                             allFileArray.add(fileBean);
                         }
                         allFileArray.addAll(folderArray);
                         if (selectType == SelectType.FILE) {
                             allFileArray.addAll(fileArray);
                         }
+
+                        allFileArray.sort((o1, o2) -> {
+                            if (o1.Name.equals("..."))
+                                return 1;
+
+                            //大小
+                            if (sortType == 1) {
+                                return Long.compare(o1.length, o2.length);
+                            }
+
+                            //时间
+                            if (sortType == 2) {
+                                return Long.compare(o1.lastModified, o2.lastModified);
+                            }
+
+                            //类型
+                            if (sortType == 3 && o1.Name.startsWith("/")) {
+                                return 1;
+                            }
+                            //默认名称
+                            return o1.Name.compareTo(o2.Name);
+                        });
 
                         BaseDialog.getTopActivity().runOnUiThread(() -> {
                             txtPath.setText(path);

@@ -37,6 +37,7 @@ import com.flyme.update.helper.interfaces.IUpdateCallback;
 import com.flyme.update.helper.utils.AndroidInfo;
 import com.flyme.update.helper.utils.ColorChangeUtils;
 import com.flyme.update.helper.utils.Config;
+import com.flyme.update.helper.utils.FileDialogUtils;
 import com.flyme.update.helper.utils.NotificationUtils;
 import com.flyme.update.helper.utils.UpdateEngineProxy;
 import com.flyme.update.helper.utils.UpdateInfo;
@@ -346,7 +347,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             else {
                 NotificationChannel channel = new NotificationChannel("new_version_push", "新版本推送", NotificationManager.IMPORTANCE_LOW);
                 mNotificationManager.createNotificationChannel(channel);
-                FileDialog.build().setSuffixArray(new String[]{".zip"})
+                FileDialogUtils.build().setSuffixArray(new String[]{".zip"})
                         .selectFile(new FileSelectCallBack() {
                             @Override
                             public void onSelect(File file, String filePath) {
@@ -425,7 +426,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 IOUtils.copy(activity.getAssets().open("stub.apk"), out);
             }
         } catch (IOException e) {
-            e.printStackTrace();
             showRebootDialog("修补失败","面具环境不全，请自行操作");
         }
 

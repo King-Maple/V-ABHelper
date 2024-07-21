@@ -77,7 +77,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.flyme.update.helper.utils.FileListView
+        <com.kongzue.filedialog.util.FileListView
             android:id="@+id/list_file"
             android:tag="ScrollController"
             android:layout_width="match_parent"

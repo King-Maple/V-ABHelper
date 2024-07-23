@@ -42,8 +42,6 @@ public class MainActivity extends BaseActivity {
     private static final int MSG_WHAT_REQUEST_ROOT_PERMISSION = 0;
     private static final int MSG_WHAT_NO_ROOT_PERMISSON = 1;
 
-    private Shell SHELL;
-
 
     @SuppressLint("HandlerLeak")
     private final Handler mHandler = new Handler(Looper.getMainLooper()) {
@@ -76,8 +74,7 @@ public class MainActivity extends BaseActivity {
         navigationBar.setPositionListener((view, position) -> replaceFragment(fragments.get(position)));
         WaitDialog.show(MainActivity.this,"正在检测超级权限...");
         getASynHandler().postDelayed(() -> {
-            SHELL = createRootShell();
-            if (!Boolean.TRUE.equals(SHELL.isAppGrantedRoot())) {
+            if (!getRootShell().isRoot()) {
                 mHandler.sendEmptyMessage(MSG_WHAT_NO_ROOT_PERMISSON);
             } else {
                 try {
@@ -102,21 +99,12 @@ public class MainActivity extends BaseActivity {
         fragmentTransaction.commit();
     }
 
-    private static Shell createRootShell() {
-        Shell.Builder builder = Shell.Builder.create();
-        try {
-            return builder.build("su");
-        } catch (Throwable e) {
-            return builder.build("sh");
-        }
-    }
-
     private void openService() throws IOException {
         WaitDialog.show(MainActivity.this,"正常启动服务...");
         Intent intent = new Intent(this, UpdateService.class);
         Shell.Task task = UpdateService.bindOrTask(intent, Shell.EXECUTOR, new RootConnect());
         if (task != null)
-            SHELL.execTask(task);
+            getRootShell().execTask(task);
     }
 
     class RootConnect implements ServiceConnection {

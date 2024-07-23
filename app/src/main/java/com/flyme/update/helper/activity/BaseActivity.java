@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.interfaces.OnNavigationStateListener;
 import com.flyme.update.helper.utils.ActivityManger;
+import com.flyme.update.helper.utils.ShellInit;
 import com.flyme.update.helper.utils.UpdateServiceManager;
 import com.flyme.update.helper.widget.TouchFeedback;
 import com.github.mmin18.widget.RealtimeBlurView;
@@ -30,6 +31,7 @@ import com.hjq.permissions.XXPermissions;
 import com.kongzue.dialogx.dialogs.CustomDialog;
 import com.kongzue.dialogx.dialogs.PopTip;
 import com.kongzue.dialogx.interfaces.OnBindView;
+import com.topjohnwu.superuser.Shell;
 
 import java.util.ArrayList;
 
@@ -48,6 +50,8 @@ public abstract class BaseActivity extends AppCompatActivity{
 
     public UpdateServiceManager uUpdateServiceManager;
 
+    private Shell mShell;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,6 +59,7 @@ public abstract class BaseActivity extends AppCompatActivity{
         touchFeedback = TouchFeedback.newInstance(this);
         mainHandler = new Handler(Looper.getMainLooper());
         ActivityManger.addActivity(this);
+
     }
 
     @Override
@@ -84,6 +89,21 @@ public abstract class BaseActivity extends AppCompatActivity{
 
     public Context getApp() {
         return getApplication();
+    }
+
+    public Shell getRootShell() {
+        if (mShell == null) {
+            Shell.Builder builder = Shell.Builder.create();
+            builder.setContext(getApplication());
+            builder.setInitializers(ShellInit.class);
+            builder.setTimeout(2);
+            try {
+                mShell = builder.build("su");
+            } catch (Throwable e) {
+                mShell = builder.build("sh");
+            }
+        }
+        return mShell;
     }
 
     public void getWritePermission(){

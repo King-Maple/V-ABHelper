@@ -81,8 +81,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private String installDir;
 
-    private final Shell shell = Shell.getShell();
-
     private FileSystemManager remoteFS;
 
     private WaitDialog mWaitDialog;
@@ -217,7 +215,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private boolean flash_image(String img, String block) {
         //ShellUtils.fastCmdResult("blockdev --setrw " + block);
-        List<String> out = shell.newJob()
+        List<String> out = activity.getRootShell().newJob()
                 .add("flash_image '" + img + "' '" + block + "'")
                 .add("echo $?")
                 .to(new ArrayList<>(), null)
@@ -254,10 +252,9 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
    private static final byte[] bootloaderFlags = {
-            (byte)0x61, (byte)0x63, (byte)0x74, (byte)0x6F, (byte)0x72, (byte)0x79, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x00, (byte)0x6D,
-            (byte)0x54, (byte)0x65, (byte)0x73, (byte)0x74, (byte)0x33, (byte)0x2E, (byte)0x31, (byte)0x30, (byte)0x2E, (byte)0x37, (byte)0x2E, (byte)0x30
+            0x61, 0x63, 0x74, 0x6F, 0x72, 0x79, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6D,
+            0x54, 0x65, 0x73, 0x74, 0x33, 0x2E, 0x31, 0x30, 0x2E, 0x37, 0x2E, 0x30
     };
-
 
     //修改 private 镜像 将不完美解锁方案变为完美
     private boolean modifyPrivate() {
@@ -448,7 +445,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
         List<String> stdout = new ArrayList<>();
         // 使用面具自带的脚本进行修补
-        boolean isSuccess = shell.newJob()
+        boolean isSuccess = activity.getRootShell().newJob()
                 .add("cd /data/adb/magisk")
                 .add("KEEPFORCEENCRYPT=" + Config.keepEnc + " " +
                         "KEEPVERITY=" + Config.keepVerity + " " +
@@ -463,7 +460,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             showErrorDialog(String.join("\n", stdout));
             return;
         }
-        shell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
+        activity.getRootShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
         if (!flash_image(installDir + "/magisk_patch.img", srcBoot)) {
             showRebootDialog("安装失败","刷入镜像失败，请自行操作");
             return;
@@ -513,7 +510,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
 
         List<String> stdout = new ArrayList<>();
-        boolean isSuccess = shell.newJob()
+        boolean isSuccess = activity.getRootShell().newJob()
                 .add("cd " + installDir)
                 .add("/data/adb/ksud boot-patch --magiskboot " + installDir +  "/magiskboot -b " + installDir + "/boot.img")
                 .to(stdout, stdout)
@@ -607,7 +604,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         List<String> stdout = new ArrayList<>();
         // 使用面具自带的脚本进行修补
-        boolean isSuccess = shell.newJob()
+        boolean isSuccess = activity.getRootShell().newJob()
                 .add("cd " + installDir)
                 .add("sh apatch.sh " + SuperKey + " " + installDir + "/boot.img -K kpatch")
                 .to(stdout, stdout)
@@ -618,7 +615,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             return;
         }
 
-        shell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
+        activity.getRootShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
 
         if (!flash_image(installDir + "/apatch_patch.img", srcBoot)) {
             showRebootDialog("安装失败","刷入镜像失败，请自行操作");

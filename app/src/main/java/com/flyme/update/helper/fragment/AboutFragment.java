@@ -76,7 +76,7 @@ public class AboutFragment extends Fragment implements TouchFeedback.OnFeedBackL
             Intent coolapkIntent = new Intent();
             coolapkIntent.setClassName("com.coolapk.market", "com.coolapk.market.view.AppLinkActivity");
             coolapkIntent.setAction("android.intent.action.VIEW");
-            coolapkIntent.setData(Uri.parse("http://www.coolapk.com/u/1449279"));
+            coolapkIntent.setData(Uri.parse("http://www.coolapk.com/u/27248277"));
             startActivity(coolapkIntent);
         } else if (id == R.id.lumyuan) {
             Intent coolapkIntent = new Intent();

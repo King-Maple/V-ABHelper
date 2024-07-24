@@ -295,7 +295,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         else if (id == R.id.help_button) {
             MessageDialog.build()
                     .setTitle("使用方法")
-                    .setMessage("准备工作：\n下载好与本设备对应的刷机包，并且给软件授予相应的权限\n\n使用方法：\n1. 点击”选择文件更新“按钮选择下载好的刷机包\n2. 弹出窗口，点击”开始更新“并等待结束\n3. 选择是否保留 Root \n4. 重启手机即可")
+                    .setMessage("准备工作：\n下载好与本设备对应的刷机包，并且给软件授予相应的权限\n\n使用方法：\n1. 点击“选择文件更新”按钮选择下载好的刷机包\n2. 弹出窗口，点击“开始更新”并等待结束\n3. 选择是否保留 Root \n4. 重启手机即可")
                     .setOkButton("知道了")
                     .show();
         } else if (id == R.id.waring_button) {

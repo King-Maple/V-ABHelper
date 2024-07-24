@@ -1,5 +1,7 @@
 package com.flyme.update.helper.activity;
 
+import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
+
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -21,6 +23,7 @@ import com.flyme.update.helper.fragment.AboutFragment;
 import com.flyme.update.helper.fragment.HomeFragment;
 import com.flyme.update.helper.service.IUpdateService;
 import com.flyme.update.helper.service.UpdateService;
+import com.flyme.update.helper.utils.ShellInit;
 import com.flyme.update.helper.utils.UpdateServiceManager;
 import com.flyme.update.helper.widget.NavigationBar;
 import com.kongzue.dialogx.dialogs.TipDialog;
@@ -42,6 +45,12 @@ public class MainActivity extends BaseActivity {
     private static final int MSG_WHAT_REQUEST_ROOT_PERMISSION = 0;
     private static final int MSG_WHAT_NO_ROOT_PERMISSON = 1;
 
+    static {
+        Shell.enableVerboseLogging = true;
+        Shell.setDefaultBuilder(Shell.Builder.create()
+                .setInitializers(ShellInit.class)
+                .setTimeout(2));
+    }
 
     @SuppressLint("HandlerLeak")
     private final Handler mHandler = new Handler(Looper.getMainLooper()) {
@@ -49,11 +58,7 @@ public class MainActivity extends BaseActivity {
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             if (msg.what == MSG_WHAT_REQUEST_ROOT_PERMISSION) {
-                try {
-                    openService();
-                } catch (IOException e) {
-                    TipDialog.show(MainActivity.this,"启动服务失败!", WaitDialog.TYPE.ERROR);
-                }
+                openService();
             } else if (msg.what == MSG_WHAT_NO_ROOT_PERMISSON) {
                 TipDialog.show(MainActivity.this,"请授予超级权限后使用!", WaitDialog.TYPE.ERROR);
             }
@@ -73,16 +78,17 @@ public class MainActivity extends BaseActivity {
         navigationBar.bindData(new String[]{ "开始", "关于" }, new int[] { R.mipmap.ic_home, R.mipmap.ic_settings });
         navigationBar.setPositionListener((view, position) -> replaceFragment(fragments.get(position)));
         WaitDialog.show(MainActivity.this,"正在检测超级权限...");
+
         getASynHandler().postDelayed(() -> {
-            if (!getRootShell().isRoot()) {
+            if (Boolean.FALSE.equals(Shell.isAppGrantedRoot())) {
                 mHandler.sendEmptyMessage(MSG_WHAT_NO_ROOT_PERMISSON);
             } else {
                 try {
-                    ShellUtils.fastCmd("rm -r " + getFilesDir().toString());
-                    ShellUtils.fastCmd("mkdir " + getFilesDir().toString());
+                    Shell.cmd("rm -r " + getFilesDir().toString()).exec();
+                    Shell.cmd("mkdir " + getFilesDir().toString()).exec();
                     FileUtils.copyToFile(getAssets().open("magiskboot"), new File(getFilesDir(),"magiskboot"));
                     FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch), new File(getFilesDir(),"apatch.sh"));
-                    ShellUtils.fastCmd("chmod -R 777 " + getFilesDir().toString());
+                    Shell.cmd("chmod -R 777 " + getFilesDir().toString()).exec();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -99,12 +105,10 @@ public class MainActivity extends BaseActivity {
         fragmentTransaction.commit();
     }
 
-    private void openService() throws IOException {
+    private void openService() {
         WaitDialog.show(MainActivity.this,"正常启动服务...");
         Intent intent = new Intent(this, UpdateService.class);
-        Shell.Task task = UpdateService.bindOrTask(intent, Shell.EXECUTOR, new RootConnect());
-        if (task != null)
-            getRootShell().execTask(task);
+        RootService.bind(intent,new RootConnect());
     }
 
     class RootConnect implements ServiceConnection {

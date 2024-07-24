@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -50,8 +51,6 @@ public abstract class BaseActivity extends AppCompatActivity{
 
     public UpdateServiceManager uUpdateServiceManager;
 
-    private Shell mShell;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,21 +88,6 @@ public abstract class BaseActivity extends AppCompatActivity{
 
     public Context getApp() {
         return getApplication();
-    }
-
-    public Shell getRootShell() {
-        if (mShell == null) {
-            Shell.Builder builder = Shell.Builder.create();
-            builder.setContext(getApplication());
-            builder.setInitializers(ShellInit.class);
-            builder.setTimeout(2);
-            try {
-                mShell = builder.build("su");
-            } catch (Throwable e) {
-                mShell = builder.build("sh");
-            }
-        }
-        return mShell;
     }
 
     public void getWritePermission(){

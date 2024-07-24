@@ -1,6 +1,7 @@
 package com.flyme.update.helper.utils;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.flyme.update.helper.R;
 import com.topjohnwu.superuser.Shell;
@@ -12,10 +13,6 @@ public class ShellInit extends Shell.Initializer {
 
     private String fastCmd(Shell shell,String cmd) {
         return ShellUtils.fastCmd(shell, cmd);
-    }
-
-    private String getVar(Shell shell,String name) {
-        return fastCmd(shell,"echo $" + name);
     }
 
     private boolean getBool(Shell shell,String name) {

@@ -215,7 +215,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private boolean flash_image(String img, String block) {
         //ShellUtils.fastCmdResult("blockdev --setrw " + block);
-        List<String> out = activity.getRootShell().newJob()
+        List<String> out = Shell.getShell().newJob()
                 .add("flash_image '" + img + "' '" + block + "'")
                 .add("echo $?")
                 .to(new ArrayList<>(), null)
@@ -445,7 +445,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
         List<String> stdout = new ArrayList<>();
         // 使用面具自带的脚本进行修补
-        boolean isSuccess = activity.getRootShell().newJob()
+        boolean isSuccess = Shell.getShell().newJob()
                 .add("cd /data/adb/magisk")
                 .add("KEEPFORCEENCRYPT=" + Config.keepEnc + " " +
                         "KEEPVERITY=" + Config.keepVerity + " " +
@@ -460,7 +460,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             showErrorDialog(String.join("\n", stdout));
             return;
         }
-        activity.getRootShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
+        Shell.getShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
         if (!flash_image(installDir + "/magisk_patch.img", srcBoot)) {
             showRebootDialog("安装失败","刷入镜像失败，请自行操作");
             return;
@@ -510,7 +510,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
 
         List<String> stdout = new ArrayList<>();
-        boolean isSuccess = activity.getRootShell().newJob()
+        boolean isSuccess = Shell.getShell().newJob()
                 .add("cd " + installDir)
                 .add("/data/adb/ksud boot-patch --magiskboot " + installDir +  "/magiskboot -b " + installDir + "/boot.img")
                 .to(stdout, stdout)
@@ -604,7 +604,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         List<String> stdout = new ArrayList<>();
         // 使用面具自带的脚本进行修补
-        boolean isSuccess = activity.getRootShell().newJob()
+        boolean isSuccess = Shell.getShell().newJob()
                 .add("cd " + installDir)
                 .add("sh apatch.sh " + SuperKey + " " + installDir + "/boot.img -K kpatch")
                 .to(stdout, stdout)
@@ -615,7 +615,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             return;
         }
 
-        activity.getRootShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
+        Shell.getShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + installDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
 
         if (!flash_image(installDir + "/apatch_patch.img", srcBoot)) {
             showRebootDialog("安装失败","刷入镜像失败，请自行操作");

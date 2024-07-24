@@ -36,5 +36,10 @@ public class App extends Application {
             StatusBarHeight = getResources().getDimensionPixelSize(resourceId);
     }
 
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+    }
+
 
 }

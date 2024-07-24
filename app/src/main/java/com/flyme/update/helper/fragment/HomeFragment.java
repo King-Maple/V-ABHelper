@@ -214,15 +214,21 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
     private boolean flash_image(String img, String block) {
-        //ShellUtils.fastCmdResult("blockdev --setrw " + block);
-        List<String> out = Shell.getShell().newJob()
-                .add("flash_image '" + img + "' '" + block + "'")
-                .add("echo $?")
-                .to(new ArrayList<>(), null)
-                .exec()
-                .getOut();
-        String result = ShellUtils.isValidOutput(out) ? out.get(out.size() - 1) : "";
-        return result.equals("0");
+        Shell.cmd("blockdev --setrw " + block).exec();
+        try {
+            if (remoteFS == null)
+                remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
+            ExtendedFile bootBlock  = remoteFS.getFile(block);
+            if (!bootBlock.exists()) {
+                return false;
+            }
+            ExtendedFile bootBackup = remoteFS.getFile(img);
+            InputStream in = bootBackup.newInputStream();
+            OutputStream out = bootBlock.newOutputStream();
+            return IOUtils.copy(in, out) > 0;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private boolean extract_image(String img, String block) {
@@ -240,15 +246,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         } catch (IOException e) {
             return false;
         }
-/*        List<String> out = shell.newJob()
-                .add("dd if='" + img + "' of='" + block + "'")
-                .add("echo $?")
-                .to(new ArrayList<>(), null)
-                .exec()
-                .getOut();
-        String result = ShellUtils.isValidOutput(out) ? out.get(out.size() - 1) : "";
-        Log.d("IUpdateService", "extract_image = " + result);
-        return result.equals("0");*/
     }
 
    private static final byte[] bootloaderFlags = {

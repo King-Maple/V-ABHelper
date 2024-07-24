@@ -46,7 +46,7 @@ public class MainActivity extends BaseActivity {
     private static final int MSG_WHAT_NO_ROOT_PERMISSON = 1;
 
     static {
-        Shell.enableVerboseLogging = true;
+        Shell.enableVerboseLogging = BuildConfig.DEBUG;
         Shell.setDefaultBuilder(Shell.Builder.create()
                 .setInitializers(ShellInit.class)
                 .setTimeout(2));
@@ -80,7 +80,8 @@ public class MainActivity extends BaseActivity {
         WaitDialog.show(MainActivity.this,"正在检测超级权限...");
 
         getASynHandler().postDelayed(() -> {
-            if (Boolean.FALSE.equals(Shell.isAppGrantedRoot())) {
+            Log.d("MainActivity_onCreate", "isRoot = " + Shell.getShell().isRoot());
+            if (!Shell.getShell().isRoot()) {
                 mHandler.sendEmptyMessage(MSG_WHAT_NO_ROOT_PERMISSON);
             } else {
                 try {

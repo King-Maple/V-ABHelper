@@ -87,22 +87,27 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private UpdateInfo uUpdateInfo;
 
+    private boolean isShowSuccessDialog = false;
+
     private final IUpdateCallback engineCallback = new IUpdateCallback.Stub() {
         @Override
         public void onPayloadApplicationComplete(int error_code) {
             //activity.uUpdateServiceManager.closeAssetFileDescriptor();
             if (error_code == UpdateEngineProxy.ErrorCodeConstants.SUCCESS) {
-                if (!modifyPrivate()) {
-                    activity.uUpdateServiceManager.cancel();
-                    TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
-                    mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
-                    return;
+                if (!isShowSuccessDialog) {
+                    isShowSuccessDialog = true;
+                    if (!modifyPrivate()) {
+                        activity.uUpdateServiceManager.cancel();
+                        TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
+                        mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
+                        return;
+                    }
+                    updateSuccess();
                 }
-                updateSuccess();
                 boolean hasDisplayid = !TextUtils.isEmpty(uUpdateInfo.getDisplayid());
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, hasDisplayid ? uUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
-                //activity.uUpdateServiceManager.cancel();
+                activity.uUpdateServiceManager.cancel();
                 TipDialog.show("更新失败!" , WaitDialog.TYPE.ERROR);
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了，错误代号：" + error_code));
             }
@@ -111,6 +116,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         @Override
         public void onStatusUpdate(int status_code, float percentage) {
             if (status_code == UpdateEngineProxy.UpdateStatusConstants.DOWNLOADING) {
+                isShowSuccessDialog = false;
                 int progress = (int)(percentage * 100.f);
                 mWaitDialog.show("正在更新 " + progress + " %", percentage);
                 if (TextUtils.isEmpty(uUpdateInfo.getDisplayid())) {
@@ -123,7 +129,16 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 mNotificationManager.notify(1, NotificationUtils.notifyProgress(activity,"正在校验分区数据","系统正在更新",0, 0,true));
             } else if (status_code == UpdateEngineProxy.UpdateStatusConstants.UPDATED_NEED_REBOOT) {
                 mWaitDialog.dismiss();
-
+                if (!isShowSuccessDialog) {
+                    isShowSuccessDialog = true;
+                    if (!modifyPrivate()) {
+                        activity.uUpdateServiceManager.cancel();
+                        TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
+                        mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
+                        return;
+                    }
+                    updateSuccess();
+                }
             }
         }
     };
@@ -229,6 +244,15 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         } catch (IOException e) {
             return false;
         }
+
+        /*List<String> out = Shell.getShell().newJob()
+                .add("flash_image '" + img + "' '" + block + "'")
+                .add("echo $?")
+                .to(new ArrayList<>(), null)
+                .exec()
+                .getOut();
+        String result = ShellUtils.isValidOutput(out) ? out.get(out.size() - 1) : "";
+        return result.equals("0");*/
     }
 
     private boolean extract_image(String img, String block) {

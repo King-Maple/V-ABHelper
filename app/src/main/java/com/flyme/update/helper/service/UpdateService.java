@@ -1,7 +1,9 @@
 package com.flyme.update.helper.service;
 
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
@@ -31,6 +33,28 @@ public class UpdateService extends RootService {
     }
 
     static final String TAG = "UpdateService";
+
+
+    @Override
+    public void onCreate() {
+        Uri uri = Uri.parse("content://com.flyme.secureservice.open.DataProvider");
+        ContentResolver contentResolver = getContentResolver();
+        Cursor r2 = contentResolver.query(uri, null, null, new String[]{"5"}, null);
+        if (r2 == null) {
+            LogUtils.e(TAG, "ContentResolver = null");
+            return;
+        }
+        if (r2.getCount() > 0) {
+            r2.moveToFirst();
+            int index = r2.getColumnIndex("value");
+            if (index > 0) {
+                String dsid = r2.getString(index);
+                LogUtils.d(TAG, "dsid = " + dsid);
+            }
+        }
+        r2.close();
+
+    }
 
 
     @Override

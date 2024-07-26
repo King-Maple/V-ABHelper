@@ -4,8 +4,6 @@ plugins {
     id("com.android.application")
 }
 
-
-
 android {
     namespace = "com.flyme.update.helper"
     compileSdk = 33
@@ -15,8 +13,8 @@ android {
         minSdk = 30
         @SuppressLint("ExpiredTargetSdkVersion")
         targetSdk = 30
-        versionCode = 210
-        versionName = "2.1.0"
+        versionCode = 220
+        versionName = "2.2.0"
 
         renderscriptTargetApi = 21
         renderscriptSupportModeEnabled = true

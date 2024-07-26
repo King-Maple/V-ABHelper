@@ -8,10 +8,12 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UpdateEngineCallback;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import com.flyme.update.helper.interfaces.IUpdateCallback;
+import com.flyme.update.helper.utils.LogUtils;
 import com.flyme.update.helper.utils.Natives;
 import com.flyme.update.helper.utils.UpdateEngineProxy;
 import com.flyme.update.helper.utils.UpdateInfo;
@@ -27,6 +29,9 @@ public class UpdateService extends RootService {
         if (Process.myUid() == 0)
             System.loadLibrary("kernelsu");
     }
+
+    static final String TAG = "UpdateService";
+
 
     @Override
     public IBinder onBind(@NonNull Intent intent) {
@@ -88,8 +93,9 @@ public class UpdateService extends RootService {
                 mUpdateEngine.applyPayload(mAssetFileDescriptor, info.getHeaderKeyValuePairs());
                 return true;
             } catch (Exception e) {
-                String ExceptionString = e.toString();
-                return ExceptionString.contains("Already processing an update");
+                String ExceptionString = e.getLocalizedMessage();
+                LogUtils.e(TAG, ExceptionString);
+                return ExceptionString.contains("Already processing an update") || ExceptionString.contains("waiting for reboot");
             }
         }
 

@@ -561,7 +561,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         WaitDialog.show("开始安装 APatch ...");
 
         // 这里使用 Github 接口，获取 releases 最新版本号
-        String rep = OkHttps.sync("https://api.github.com/repos/bmax121/KernelPatch/releases/latest")
+        String rep = OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/latest.json")
                 .get()
                 .getBody().toString();
 

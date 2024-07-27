@@ -33,6 +33,7 @@ import com.kongzue.dialogx.interfaces.OnBackPressedListener;
 import com.kongzue.dialogx.interfaces.OnBindView;
 import com.kongzue.dialogx.interfaces.OnMenuItemClickListener;
 import com.kongzue.filedialog.interfaces.FileSelectCallBack;
+import com.topjohnwu.superuser.nio.ExtendedFile;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -102,42 +103,9 @@ public class FileDialogUtils {
             errorLog("请先完成 DialogX 组件的初始化，详情：https://github.com/kongzue/DialogX");
             return;
         }
-        requestPermissions(context);
+        createDialog();
     }
 
-    /**
-     * 建议自行处理好权限问题，不要依赖 FileDialog 申请，原因是无法监听 onRequestPermissionsResult 的回调.
-     * 若实在懒得自己处理，请重写 activity 的 onRequestPermissionsResult(...) 方法，
-     * 并调用 FileDialog 实例的 onRequestPermissionsResult(...) 方法。
-     *
-     * @param context activity 上下文
-     */
-    private void requestPermissions(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // 先判断有没有权限
-            if (Environment.isExternalStorageManager()) {
-                createDialog();
-            } else {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                intent.setData(Uri.parse("package:" + context.getPackageName()));
-                ((Activity) context).startActivityForResult(intent, REQUEST_PERMISSION_CODE);
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                createDialog();
-            } else {
-                ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_PERMISSION_CODE);
-            }
-        } else {
-            createDialog();
-        }
-    }
-
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == REQUEST_PERMISSION_CODE) {
-            readyShowDialog();
-        }
-    }
 
     String path;
     FileAdapter fileAdapter;
@@ -196,14 +164,11 @@ public class FileDialogUtils {
                         BottomMenu.show("按名称", "按大小", "按时间", "按类型")
                                 .setMessage("显示文件排序的方式")
                                 .setTitle("排序方式")
-                                .setOnMenuItemClickListener(new OnMenuItemClickListener<BottomMenu>() {
-                                    @Override
-                                    public boolean onClick(BottomMenu dialog, CharSequence text, int index) {
-                                        //记录已选择值
-                                        sortType = index;
-                                        refreshFileList();
-                                        return false;
-                                    }
+                                .setOnMenuItemClickListener((dialog12, text, index) -> {
+                                    //记录已选择值
+                                    sortType = index;
+                                    refreshFileList();
+                                    return false;
                                 })
                                 .setSelection(sortType);
                     }
@@ -343,10 +308,10 @@ public class FileDialogUtils {
 
 
 
-                        File file = new File(path);
-                        File[] listFiles = file.listFiles();
+                        ExtendedFile file = SuFileUtils.getInstance().getRemote().getFile(path);
+                        ExtendedFile[] listFiles = file.listFiles();
                         if (listFiles != null && listFiles.length != 0) {
-                            for (File f : listFiles) {
+                            for (ExtendedFile f : listFiles) {
                                 FileBean fileBean = new FileBean();
                                 fileBean.lastModified = f.lastModified();
                                 fileBean.length = f.length();

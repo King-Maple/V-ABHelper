@@ -24,6 +24,7 @@ import com.flyme.update.helper.fragment.HomeFragment;
 import com.flyme.update.helper.service.IUpdateService;
 import com.flyme.update.helper.service.UpdateService;
 import com.flyme.update.helper.utils.ShellInit;
+import com.flyme.update.helper.utils.SuFileUtils;
 import com.flyme.update.helper.utils.UpdateServiceManager;
 import com.flyme.update.helper.widget.NavigationBar;
 import com.kongzue.dialogx.dialogs.TipDialog;
@@ -118,6 +119,7 @@ public class MainActivity extends BaseActivity {
             IUpdateService mUpdateService = IUpdateService.Stub.asInterface(service);
             if (mUpdateService != null) {
                 uUpdateServiceManager = new UpdateServiceManager(mUpdateService);
+                SuFileUtils.getInstance().init(uUpdateServiceManager.getFileSystemManager());
                 WaitDialog.dismiss(MainActivity.this);
             } else {
                 TipDialog.show(MainActivity.this,"启动服务失败!", WaitDialog.TYPE.ERROR);

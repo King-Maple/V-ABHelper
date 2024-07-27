@@ -40,6 +40,7 @@ import com.flyme.update.helper.utils.Config;
 import com.flyme.update.helper.utils.FileDialogUtils;
 import com.flyme.update.helper.utils.LogUtils;
 import com.flyme.update.helper.utils.NotificationUtils;
+import com.flyme.update.helper.utils.SuFileUtils;
 import com.flyme.update.helper.utils.UpdateEngineProxy;
 import com.flyme.update.helper.utils.UpdateInfo;
 import com.flyme.update.helper.utils.UpdateParser;
@@ -54,12 +55,10 @@ import com.kongzue.dialogx.dialogs.TipDialog;
 import com.kongzue.dialogx.dialogs.WaitDialog;
 import com.kongzue.dialogx.interfaces.OnDialogButtonClickListener;
 import com.kongzue.dialogx.interfaces.OnIconChangeCallBack;
-import com.kongzue.filedialog.FileDialog;
 import com.kongzue.filedialog.interfaces.FileSelectCallBack;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.nio.ExtendedFile;
-import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
@@ -81,8 +80,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     private NotificationManager mNotificationManager;
 
     private String installDir;
-
-    private FileSystemManager remoteFS;
 
     private WaitDialog mWaitDialog;
 
@@ -218,14 +215,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     private boolean flash_image(String img, String block) {
         Shell.cmd("blockdev --setrw " + block).exec();
         try {
-            if (remoteFS == null)
-                remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
-            ExtendedFile bootBlock  = remoteFS.getFile(block);
+            ExtendedFile bootBlock  = SuFileUtils.getInstance().getRemote().getFile(block);
             if (!bootBlock.exists()) {
                 LogUtils.e("flash_image", "block file no exists");
                 return false;
             }
-            ExtendedFile bootBackup = remoteFS.getFile(img);
+            ExtendedFile bootBackup = SuFileUtils.getInstance().getRemote().getFile(img);
             InputStream in = bootBackup.newInputStream();
             OutputStream out = bootBlock.newOutputStream();
             return IOUtils.copy(in, out) > 0;
@@ -246,14 +241,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private boolean extract_image(String img, String block) {
         try {
-            if (remoteFS == null)
-                remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
-            ExtendedFile bootBlock  = remoteFS.getFile(img);
+            ExtendedFile bootBlock  = SuFileUtils.getInstance().getRemote().getFile(img);
             if (!bootBlock.exists()) {
                 LogUtils.e("extract_image", "img file no exists");
                 return false;
             }
-            ExtendedFile bootBackup = remoteFS.getFile(block);
+            ExtendedFile bootBackup = SuFileUtils.getInstance().getRemote().getFile(block);
             InputStream in = bootBlock.newInputStream();
             OutputStream out = bootBackup.newOutputStream();
             return IOUtils.copy(in, out) > 0;
@@ -354,8 +347,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                             return false;
                         })
                         .show();
-            } else if (!activity.hasWritePermission()){
-                activity.showFilePermissinDialog();
             } else if (!isEnabled) {
                 activity.showNotificationPermissinDialog();
             }
@@ -428,14 +419,14 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         WaitDialog.show("正在安装 Magisk ...");
         String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
         for (String file: envList) {
-            if (!remoteFS.getFile("/data/adb/magisk/" + file).exists()) {
+            if (!SuFileUtils.getInstance().getRemote().getFile("/data/adb/magisk/" + file).exists()) {
                 showRebootDialog("修补失败","Magisk 环境不全，请自行操作");
                 return;
             }
         }
 
         try {
-            ExtendedFile stub = remoteFS.getFile("/data/adb/magisk/stub.apk");
+            ExtendedFile stub = SuFileUtils.getInstance().getRemote().getFile("/data/adb/magisk/stub.apk");
             if (!stub.exists()) {
                 OutputStream out = stub.newOutputStream();
                 IOUtils.copy(activity.getAssets().open("stub.apk"), out);
@@ -449,7 +440,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         // 提取第二分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
-        if (!remoteFS.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!SuFileUtils.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 
@@ -505,7 +496,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
 
         //检查 ksud 文件是否存在
-        if (!remoteFS.getFile("/data/adb/ksud").exists()) {
+        if (!SuFileUtils.getInstance().getRemote().getFile("/data/adb/ksud").exists()) {
             showRebootDialog("修补失败","KernelSu 环境不全，请自行操作");
             return;
         }
@@ -514,7 +505,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         // 提取第二分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
-        if (!remoteFS.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!SuFileUtils.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 
@@ -656,8 +647,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private void updateSuccess() {
         WaitDialog.dismiss();
-        if (remoteFS == null)
-            remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
+
         BottomMenu.show("更新成功", "恭喜你看到我了，现在轮到你选择保留 Root 的方式了，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSu", "APatch"})
                 .setOnIconChangeCallBack(new OnIconChangeCallBack<BottomMenu>(true) {
                     @Override

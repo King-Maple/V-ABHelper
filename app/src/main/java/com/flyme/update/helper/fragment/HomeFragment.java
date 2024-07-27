@@ -38,6 +38,7 @@ import com.flyme.update.helper.utils.AndroidInfo;
 import com.flyme.update.helper.utils.ColorChangeUtils;
 import com.flyme.update.helper.utils.Config;
 import com.flyme.update.helper.utils.FileDialogUtils;
+import com.flyme.update.helper.utils.LogUtils;
 import com.flyme.update.helper.utils.NotificationUtils;
 import com.flyme.update.helper.utils.UpdateEngineProxy;
 import com.flyme.update.helper.utils.UpdateInfo;
@@ -87,23 +88,11 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private UpdateInfo uUpdateInfo;
 
-    private boolean isShowSuccessDialog = false;
-
     private final IUpdateCallback engineCallback = new IUpdateCallback.Stub() {
         @Override
         public void onPayloadApplicationComplete(int error_code) {
             //activity.uUpdateServiceManager.closeAssetFileDescriptor();
             if (error_code == UpdateEngineProxy.ErrorCodeConstants.SUCCESS) {
-                if (!isShowSuccessDialog) {
-                    isShowSuccessDialog = true;
-                    if (!modifyPrivate()) {
-                        activity.uUpdateServiceManager.cancel();
-                        TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
-                        mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
-                        return;
-                    }
-                    updateSuccess();
-                }
                 boolean hasDisplayid = !TextUtils.isEmpty(uUpdateInfo.getDisplayid());
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, hasDisplayid ? uUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
@@ -116,7 +105,6 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         @Override
         public void onStatusUpdate(int status_code, float percentage) {
             if (status_code == UpdateEngineProxy.UpdateStatusConstants.DOWNLOADING) {
-                isShowSuccessDialog = false;
                 int progress = (int)(percentage * 100.f);
                 mWaitDialog.show("正在更新 " + progress + " %", percentage);
                 if (TextUtils.isEmpty(uUpdateInfo.getDisplayid())) {
@@ -129,16 +117,15 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 mNotificationManager.notify(1, NotificationUtils.notifyProgress(activity,"正在校验分区数据","系统正在更新",0, 0,true));
             } else if (status_code == UpdateEngineProxy.UpdateStatusConstants.UPDATED_NEED_REBOOT) {
                 mWaitDialog.dismiss();
-                if (!isShowSuccessDialog) {
-                    isShowSuccessDialog = true;
-                    if (!modifyPrivate()) {
-                        activity.uUpdateServiceManager.cancel();
-                        TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
-                        mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
-                        return;
-                    }
-                    updateSuccess();
+                if (!modifyPrivate()) {
+                    LogUtils.e("onStatusUpdate", "modifyPrivate fail");
+                    activity.uUpdateServiceManager.cancel();
+                    TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
+                    mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
+                    return;
                 }
+                LogUtils.d("onStatusUpdate", "ShowUpdateSuccessDialog");
+                updateSuccess();
             }
         }
     };
@@ -235,6 +222,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
             ExtendedFile bootBlock  = remoteFS.getFile(block);
             if (!bootBlock.exists()) {
+                LogUtils.e("flash_image", "block file no exists");
                 return false;
             }
             ExtendedFile bootBackup = remoteFS.getFile(img);
@@ -242,6 +230,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             OutputStream out = bootBlock.newOutputStream();
             return IOUtils.copy(in, out) > 0;
         } catch (IOException e) {
+            LogUtils.e("flash_image", e.getLocalizedMessage());
             return false;
         }
 
@@ -261,6 +250,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 remoteFS = activity.uUpdateServiceManager.getFileSystemManager();
             ExtendedFile bootBlock  = remoteFS.getFile(img);
             if (!bootBlock.exists()) {
+                LogUtils.e("extract_image", "img file no exists");
                 return false;
             }
             ExtendedFile bootBackup = remoteFS.getFile(block);
@@ -268,6 +258,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             OutputStream out = bootBackup.newOutputStream();
             return IOUtils.copy(in, out) > 0;
         } catch (IOException e) {
+            LogUtils.e("extract_image", e.getLocalizedMessage());
             return false;
         }
     }
@@ -282,28 +273,33 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         if (!Config.flymemodel.equals("M2391") && !Config.flymemodel.equals("M2381"))
             return true;
         try {
+            LogUtils.i("modifyPrivate", "modifyPrivate start");
             String srcImage = "/dev/block/bootdevice/by-name/private";
             ShellUtils.fastCmd("rm -r " + installDir + "/*.img");
             if (!extract_image(srcImage,installDir + "/private.img")) {
+                LogUtils.e("modifyPrivate", "extract image private fail");
                 return false;
             }
+            ShellUtils.fastCmd("chmod 777 " + installDir + "/private.img");
             RandomAccessFile randomAccessFile = new RandomAccessFile(installDir + "/private.img", "rw");
             int keySize = 0x14120 - 0x14000;
             byte[] bootlodaerKey = new byte[keySize];
             randomAccessFile.seek(0x14000);
             randomAccessFile.read(bootlodaerKey);
             if (bootlodaerKey[0] == 'L' && bootlodaerKey[1] == 'O' && bootlodaerKey[2] == 'C' && bootlodaerKey[3] == 'K') {
+                LogUtils.i("modifyPrivate", "modify BL data");
                 randomAccessFile.seek(0x14000);
                 randomAccessFile.write(new byte[keySize]);//填充 0
                 randomAccessFile.seek(0x11000);
                 randomAccessFile.write(bootlodaerKey);//把解锁数据移动到这里
             }
+            LogUtils.i("modifyPrivate", "set mTest Flags");
             randomAccessFile.seek(0x11105);
             randomAccessFile.write(bootloaderFlags);//设置 mTest 标识，主要是这个
             randomAccessFile.close();
             return flash_image(installDir + "/private.img", srcImage);
         } catch (IOException e) {
-            Log.d("modifyPrivate", e.toString());
+            Log.e("modifyPrivate", e.getLocalizedMessage());
             return false;
         }
 

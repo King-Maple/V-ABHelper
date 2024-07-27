@@ -13,8 +13,8 @@ android {
         minSdk = 30
         @SuppressLint("ExpiredTargetSdkVersion")
         targetSdk = 30
-        versionCode = 220
-        versionName = "2.2.0"
+        versionCode = 225
+        versionName = "2.2.5"
 
         renderscriptTargetApi = 21
         renderscriptSupportModeEnabled = true

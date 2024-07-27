@@ -37,22 +37,29 @@ public class UpdateService extends RootService {
 
     @Override
     public void onCreate() {
-        Uri uri = Uri.parse("content://com.flyme.secureservice.open.DataProvider");
-        ContentResolver contentResolver = getContentResolver();
-        Cursor r2 = contentResolver.query(uri, null, null, new String[]{"5"}, null);
-        if (r2 == null) {
-            LogUtils.e(TAG, "ContentResolver = null");
-            return;
-        }
-        if (r2.getCount() > 0) {
-            r2.moveToFirst();
-            int index = r2.getColumnIndex("value");
-            if (index > 0) {
-                String dsid = r2.getString(index);
-                LogUtils.d(TAG, "dsid = " + dsid);
+        /*Cursor cursor = null;
+        try {
+            cursor = getApplicationContext().getContentResolver().query(Uri.parse("content://com.flyme.secureservice.open.DataProvider"), null, null, new String[]{"5"}, null);
+            if (cursor == null) {
+                LogUtils.e(TAG, "ContentResolver = null");
+                return;
             }
-        }
-        r2.close();
+            if (cursor.getCount() > 0) {
+                cursor.moveToFirst();
+                int index = cursor.getColumnIndex("value");
+                if (index >= 0) {
+                    String dsid = cursor.getString(index);
+                    LogUtils.d(TAG, "dsid = " + dsid);
+                    cursor.close();
+                    return;
+                }
+                LogUtils.e(TAG, "no value in cursor");
+            }
+            cursor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            LogUtils.e(TAG, e.getMessage());
+        }*/
 
     }
 

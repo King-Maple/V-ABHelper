@@ -1,4 +1,4 @@
-package com.flyme.update.helper.utils;
+package com.flyme.update.helper.manager;
 
 import android.app.Activity;
 

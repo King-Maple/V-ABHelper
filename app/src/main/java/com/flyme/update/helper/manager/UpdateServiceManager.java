@@ -1,19 +1,36 @@
-package com.flyme.update.helper.utils;
+package com.flyme.update.helper.manager;
 
 import android.os.IBinder;
 import android.os.RemoteException;
 
+import com.flyme.update.helper.bean.UpdateInfo;
 import com.flyme.update.helper.interfaces.IUpdateCallback;
 import com.flyme.update.helper.service.IUpdateService;
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
 public class UpdateServiceManager {
+
+    private static volatile UpdateServiceManager instance;
     private IUpdateService uNativeService = null;
 
-    public UpdateServiceManager(IUpdateService ipc) {
-        this.uNativeService = ipc;
+    public static synchronized UpdateServiceManager getInstance() {
+        if (instance == null) {
+            synchronized (UpdateServiceManager.class) {
+                if (instance == null) {
+                    instance = new UpdateServiceManager();
+                }
+            }
+        }
+        return instance;
     }
 
+    public void init(IUpdateService service) {
+        uNativeService = service;
+    }
+
+    public IUpdateService getService() {
+        return uNativeService;
+    }
 
     public boolean startUpdateSystem(UpdateInfo info, IUpdateCallback listener) {
         try {

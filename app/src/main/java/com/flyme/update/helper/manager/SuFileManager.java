@@ -1,16 +1,16 @@
-package com.flyme.update.helper.utils;
+package com.flyme.update.helper.manager;
 
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
-public class SuFileUtils {
-    private static volatile SuFileUtils instance;
+public class SuFileManager {
+    private static volatile SuFileManager instance;
     private FileSystemManager uFileSystemManager;
 
-    public static synchronized SuFileUtils getInstance() {
+    public static synchronized SuFileManager getInstance() {
         if (instance == null) {
-            synchronized (SuFileUtils.class) {
+            synchronized (SuFileManager.class) {
                 if (instance == null) {
-                    instance = new SuFileUtils();
+                    instance = new SuFileManager();
                 }
             }
         }

@@ -1,7 +1,5 @@
 package com.flyme.update.helper.activity;
 
-import static com.topjohnwu.superuser.Shell.FLAG_MOUNT_MASTER;
-
 import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -23,14 +21,13 @@ import com.flyme.update.helper.fragment.AboutFragment;
 import com.flyme.update.helper.fragment.HomeFragment;
 import com.flyme.update.helper.service.IUpdateService;
 import com.flyme.update.helper.service.UpdateService;
-import com.flyme.update.helper.utils.ShellInit;
-import com.flyme.update.helper.utils.SuFileUtils;
-import com.flyme.update.helper.utils.UpdateServiceManager;
+import com.flyme.update.helper.shell.ShellInit;
+import com.flyme.update.helper.manager.SuFileManager;
+import com.flyme.update.helper.manager.UpdateServiceManager;
 import com.flyme.update.helper.widget.NavigationBar;
 import com.kongzue.dialogx.dialogs.TipDialog;
 import com.kongzue.dialogx.dialogs.WaitDialog;
 import com.topjohnwu.superuser.Shell;
-import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.ipc.RootService;
 
 import org.apache.commons.io.FileUtils;
@@ -118,8 +115,8 @@ public class MainActivity extends BaseActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             IUpdateService mUpdateService = IUpdateService.Stub.asInterface(service);
             if (mUpdateService != null) {
-                uUpdateServiceManager = new UpdateServiceManager(mUpdateService);
-                SuFileUtils.getInstance().init(uUpdateServiceManager.getFileSystemManager());
+                UpdateServiceManager.getInstance().init(mUpdateService);
+                SuFileManager.getInstance().init(UpdateServiceManager.getInstance().getFileSystemManager());
                 WaitDialog.dismiss(MainActivity.this);
             } else {
                 TipDialog.show(MainActivity.this,"启动服务失败!", WaitDialog.TYPE.ERROR);

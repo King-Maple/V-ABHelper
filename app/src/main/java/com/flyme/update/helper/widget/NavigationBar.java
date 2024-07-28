@@ -40,11 +40,8 @@ public class NavigationBar extends LinearLayout{
 
     public NavigationBar(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        positionListener = new OnClickPositionListener() {
-            @Override
-            public void onChanged(View view, int position) {
+        positionListener = (view, position) -> {
 
-            }
         };
     }
 

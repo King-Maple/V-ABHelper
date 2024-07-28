@@ -34,15 +34,16 @@ import com.ejlchina.okhttps.OkHttps;
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.activity.BaseActivity;
 import com.flyme.update.helper.interfaces.IUpdateCallback;
+import com.flyme.update.helper.manager.UpdateServiceManager;
 import com.flyme.update.helper.utils.AndroidInfo;
 import com.flyme.update.helper.utils.ColorChangeUtils;
 import com.flyme.update.helper.utils.Config;
 import com.flyme.update.helper.utils.FileDialogUtils;
 import com.flyme.update.helper.utils.LogUtils;
 import com.flyme.update.helper.utils.NotificationUtils;
-import com.flyme.update.helper.utils.SuFileUtils;
-import com.flyme.update.helper.utils.UpdateEngineProxy;
-import com.flyme.update.helper.utils.UpdateInfo;
+import com.flyme.update.helper.manager.SuFileManager;
+import com.flyme.update.helper.proxy.UpdateEngineProxy;
+import com.flyme.update.helper.bean.UpdateInfo;
 import com.flyme.update.helper.utils.UpdateParser;
 import com.flyme.update.helper.utils.Utils;
 import com.flyme.update.helper.widget.TouchFeedback;
@@ -59,7 +60,6 @@ import com.kongzue.filedialog.interfaces.FileSelectCallBack;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.nio.ExtendedFile;
-
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 
@@ -93,7 +93,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 boolean hasDisplayid = !TextUtils.isEmpty(uUpdateInfo.getDisplayid());
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, hasDisplayid ? uUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
-                activity.uUpdateServiceManager.cancel();
+                UpdateServiceManager.getInstance().cancel();
                 TipDialog.show("更新失败!" , WaitDialog.TYPE.ERROR);
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了，错误代号：" + error_code));
             }
@@ -116,7 +116,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 mWaitDialog.dismiss();
                 if (!modifyPrivate()) {
                     LogUtils.e("onStatusUpdate", "modifyPrivate fail");
-                    activity.uUpdateServiceManager.cancel();
+                    UpdateServiceManager.getInstance().cancel();
                     TipDialog.show("更新失败!", WaitDialog.TYPE.ERROR);
                     mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
                     return;
@@ -215,12 +215,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     private boolean flash_image(String img, String block) {
         Shell.cmd("blockdev --setrw " + block).exec();
         try {
-            ExtendedFile bootBlock  = SuFileUtils.getInstance().getRemote().getFile(block);
+            ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(block);
             if (!bootBlock.exists()) {
                 LogUtils.e("flash_image", "block file no exists");
                 return false;
             }
-            ExtendedFile bootBackup = SuFileUtils.getInstance().getRemote().getFile(img);
+            ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);
             InputStream in = bootBackup.newInputStream();
             OutputStream out = bootBlock.newOutputStream();
             return IOUtils.copy(in, out) > 0;
@@ -241,12 +241,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private boolean extract_image(String img, String block) {
         try {
-            ExtendedFile bootBlock  = SuFileUtils.getInstance().getRemote().getFile(img);
+            ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(img);
             if (!bootBlock.exists()) {
                 LogUtils.e("extract_image", "img file no exists");
                 return false;
             }
-            ExtendedFile bootBackup = SuFileUtils.getInstance().getRemote().getFile(block);
+            ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(block);
             InputStream in = bootBlock.newInputStream();
             OutputStream out = bootBackup.newOutputStream();
             return IOUtils.copy(in, out) > 0;
@@ -318,7 +318,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                     .setOkButton("知道了")
                     .show();
         } else if (id == R.id.start_button) {
-            if (activity.uUpdateServiceManager == null) {
+            if (UpdateServiceManager.getInstance().getService() == null) {
                 MessageDialog.build()
                         .setTitle("温馨提示")
                         .setMessage("服务未成功启动，请重试~")
@@ -327,7 +327,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 return;
             }
 
-            if (!activity.uUpdateServiceManager.isValid()) {
+            if (!UpdateServiceManager.getInstance().isValid()) {
                 MessageDialog.build()
                         .setTitle("温馨提示")
                         .setMessage("当前设备无法找到服务，请联系开发者尝试解决~")
@@ -397,7 +397,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                         .setTitle("温馨提示")
                         .setMessage("检测到选择的全量包是: " + uUpdateInfo.getBuildInfo() + ", 与您的设备不符，是否继续更新")
                         .setOkButton("继续",(baseDialog, v) -> {
-                            if (!activity.uUpdateServiceManager.startUpdateSystem(uUpdateInfo, engineCallback)){
+                            if (!UpdateServiceManager.getInstance().startUpdateSystem(uUpdateInfo, engineCallback)){
                                 showErrorDialog("更新失败","更新服务错误，请重试");
                             }
                             return false;
@@ -407,7 +407,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 return;
             }
 
-            if (!activity.uUpdateServiceManager.startUpdateSystem(uUpdateInfo, engineCallback)){
+            if (!UpdateServiceManager.getInstance().startUpdateSystem(uUpdateInfo, engineCallback)){
                 showErrorDialog("更新失败","更新服务错误，请重试");
             }
         }
@@ -419,14 +419,14 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         WaitDialog.show("正在安装 Magisk ...");
         String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
         for (String file: envList) {
-            if (!SuFileUtils.getInstance().getRemote().getFile("/data/adb/magisk/" + file).exists()) {
+            if (!SuFileManager.getInstance().getRemote().getFile("/data/adb/magisk/" + file).exists()) {
                 showRebootDialog("修补失败","Magisk 环境不全，请自行操作");
                 return;
             }
         }
 
         try {
-            ExtendedFile stub = SuFileUtils.getInstance().getRemote().getFile("/data/adb/magisk/stub.apk");
+            ExtendedFile stub = SuFileManager.getInstance().getRemote().getFile("/data/adb/magisk/stub.apk");
             if (!stub.exists()) {
                 OutputStream out = stub.newOutputStream();
                 IOUtils.copy(activity.getAssets().open("stub.apk"), out);
@@ -440,7 +440,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         // 提取第二分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
-        if (!SuFileUtils.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!SuFileManager.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 
@@ -482,8 +482,8 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     private void patchKernelSU() {
         WaitDialog.show("正在安装 KernelSu...");
         if (ksuversion == -1)
-            ksuversion = activity.uUpdateServiceManager.GetKsuVersion();
-        boolean isLkmMode = activity.uUpdateServiceManager.KsuIsLkmMode();
+            ksuversion = UpdateServiceManager.getInstance().GetKsuVersion();
+        boolean isLkmMode = UpdateServiceManager.getInstance().KsuIsLkmMode();
 
         // 读取当前分区，用来判断第二分区
         String next_slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
@@ -496,7 +496,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
 
         //检查 ksud 文件是否存在
-        if (!SuFileUtils.getInstance().getRemote().getFile("/data/adb/ksud").exists()) {
+        if (!SuFileManager.getInstance().getRemote().getFile("/data/adb/ksud").exists()) {
             showRebootDialog("修补失败","KernelSu 环境不全，请自行操作");
             return;
         }
@@ -505,7 +505,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         // 提取第二分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
-        if (!SuFileUtils.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!SuFileManager.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 

@@ -7,10 +7,8 @@ import android.content.Context;
 import com.flyme.update.helper.activity.LogActivity;
 import com.flyme.update.helper.utils.Config;
 import com.flyme.update.helper.utils.CrashHandlerUtil;
-import com.flyme.update.helper.utils.ShellInit;
 import com.flyme.update.helper.utils.Utils;
 import com.kongzue.dialogx.DialogX;
-import com.topjohnwu.superuser.Shell;
 
 import org.lsposed.hiddenapibypass.HiddenApiBypass;
 

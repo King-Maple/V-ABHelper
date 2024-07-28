@@ -1,24 +1,25 @@
 package com.flyme.update.helper.service;
 
-import android.content.ContentResolver;
+import static android.system.Os.prctl;
+
 import android.content.Intent;
 import android.content.res.AssetFileDescriptor;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UpdateEngineCallback;
-import android.util.Log;
+import android.system.ErrnoException;
+import android.system.Os;
 
 import androidx.annotation.NonNull;
 
 import com.flyme.update.helper.interfaces.IUpdateCallback;
 import com.flyme.update.helper.utils.LogUtils;
 import com.flyme.update.helper.utils.Natives;
-import com.flyme.update.helper.utils.UpdateEngineProxy;
-import com.flyme.update.helper.utils.UpdateInfo;
+import com.flyme.update.helper.proxy.UpdateEngineProxy;
+import com.flyme.update.helper.bean.UpdateInfo;
 import com.topjohnwu.superuser.ipc.RootService;
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
@@ -159,6 +160,13 @@ public class UpdateService extends RootService {
 
         @Override
         public int GetKsuVersion() {
+/*            int version = -1;
+            int lkm = -1;
+            try {
+                Os.prctl( 0xDEADBEEF, 2, version, lkm,0);
+            } catch (ErrnoException e) {
+                e.printStackTrace();
+            }*/
             return Natives.getVersion();
         }
 

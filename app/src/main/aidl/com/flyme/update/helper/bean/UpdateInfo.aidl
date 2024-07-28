@@ -1,4 +1,4 @@
 // UpdateInfo.aidl
-package com.flyme.update.helper.utils;
+package com.flyme.update.helper.bean;
 
 parcelable UpdateInfo;

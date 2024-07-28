@@ -1,6 +1,8 @@
-package com.flyme.update.helper.utils;
+package com.flyme.update.helper.proxy;
 
 import android.os.IBinder;
+
+import com.flyme.update.helper.utils.Reflection;
 
 public class ServiceManagerProxy {
     private static final Reflection<?> Ref = Reflection.on("android.os.ServiceManager");

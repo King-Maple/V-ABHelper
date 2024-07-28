@@ -2,7 +2,7 @@
 package com.flyme.update.helper.service;
 
 import com.flyme.update.helper.interfaces.IUpdateCallback;
-import com.flyme.update.helper.utils.UpdateInfo;
+import com.flyme.update.helper.bean.UpdateInfo;
 
 interface IUpdateService {
 

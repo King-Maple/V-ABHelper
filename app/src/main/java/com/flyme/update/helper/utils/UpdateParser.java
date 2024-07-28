@@ -1,5 +1,7 @@
 package com.flyme.update.helper.utils;
 
+import com.flyme.update.helper.bean.UpdateInfo;
+
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;

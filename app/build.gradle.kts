@@ -85,8 +85,6 @@ dependencies {
     implementation("com.github.kongzue.DialogX:DialogXMaterialYou:${dialogx_version}")
     implementation("com.github.kongzue.DialogXSample:FileDialog:0.0.14")
 
-    implementation("com.github.getActivity:XXPermissions:18.0")
-
     implementation("com.ejlchina:okhttps:3.5.3")
 
     implementation("commons-io:commons-io:2.11.0")

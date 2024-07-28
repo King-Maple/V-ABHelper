@@ -1,4 +1,4 @@
-package com.flyme.update.helper.utils;
+package com.flyme.update.helper.proxy;
 
 import android.content.res.AssetFileDescriptor;
 import android.os.IBinder;

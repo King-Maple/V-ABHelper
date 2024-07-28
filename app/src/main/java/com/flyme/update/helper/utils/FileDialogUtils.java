@@ -1,44 +1,31 @@
 package com.flyme.update.helper.utils;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
-import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
-import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.adapter.FileAdapter;
 import com.flyme.update.helper.bean.FileBean;
+import com.flyme.update.helper.manager.SuFileManager;
 import com.kongzue.dialogx.dialogs.BottomMenu;
 import com.kongzue.dialogx.dialogs.FullScreenDialog;
 import com.kongzue.dialogx.dialogs.PopTip;
 import com.kongzue.dialogx.interfaces.BaseDialog;
-import com.kongzue.dialogx.interfaces.OnBackPressedListener;
 import com.kongzue.dialogx.interfaces.OnBindView;
-import com.kongzue.dialogx.interfaces.OnMenuItemClickListener;
 import com.kongzue.filedialog.interfaces.FileSelectCallBack;
 import com.topjohnwu.superuser.nio.ExtendedFile;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 public class FileDialogUtils {
@@ -308,7 +295,7 @@ public class FileDialogUtils {
 
 
 
-                        ExtendedFile file = SuFileUtils.getInstance().getRemote().getFile(path);
+                        ExtendedFile file = SuFileManager.getInstance().getRemote().getFile(path);
                         ExtendedFile[] listFiles = file.listFiles();
                         if (listFiles != null && listFiles.length != 0) {
                             for (ExtendedFile f : listFiles) {

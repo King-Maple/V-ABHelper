@@ -1,4 +1,4 @@
-package com.flyme.update.helper.utils;
+package com.flyme.update.helper.bean;
 
 import android.os.Parcel;
 import android.os.Parcelable;

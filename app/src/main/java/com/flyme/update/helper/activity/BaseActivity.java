@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -21,18 +20,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.flyme.update.helper.R;
 import com.flyme.update.helper.interfaces.OnNavigationStateListener;
-import com.flyme.update.helper.utils.ActivityManger;
-import com.flyme.update.helper.utils.ShellInit;
-import com.flyme.update.helper.utils.UpdateServiceManager;
+import com.flyme.update.helper.manager.ActivityManger;
 import com.flyme.update.helper.widget.TouchFeedback;
 import com.github.mmin18.widget.RealtimeBlurView;
 import com.gyf.immersionbar.ImmersionBar;
-import com.hjq.permissions.Permission;
-import com.hjq.permissions.XXPermissions;
 import com.kongzue.dialogx.dialogs.CustomDialog;
 import com.kongzue.dialogx.dialogs.PopTip;
 import com.kongzue.dialogx.interfaces.OnBindView;
-import com.topjohnwu.superuser.Shell;
 
 import java.util.ArrayList;
 
@@ -48,8 +42,6 @@ public abstract class BaseActivity extends AppCompatActivity{
     private Handler mainHandler;
 
     private Handler aSynHandler;
-
-    public UpdateServiceManager uUpdateServiceManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,29 +82,6 @@ public abstract class BaseActivity extends AppCompatActivity{
         return getApplication();
     }
 
-    public void getWritePermission(){
-        if (!XXPermissions.isGranted(this, Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE)) {
-            XXPermissions.with(this)
-                    .permission(Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE)
-                    .request((permissions, allGranted) -> {
-                        XXPermissions.with(this)
-                                .permission(Permission.MANAGE_EXTERNAL_STORAGE)
-                                .request(null);
-                    });
-        } else {
-            if (!XXPermissions.isGranted(this, Permission.MANAGE_EXTERNAL_STORAGE)) {
-                XXPermissions.with(this)
-                        .permission(Permission.MANAGE_EXTERNAL_STORAGE)
-                        .request(null);
-            }
-        }
-    }
-
-
-
-    public boolean hasWritePermission(){
-        return XXPermissions.isGranted(this, Permission.READ_EXTERNAL_STORAGE, Permission.WRITE_EXTERNAL_STORAGE, Permission.MANAGE_EXTERNAL_STORAGE);
-    }
 
     @Override
     public void onBackPressed() {
@@ -181,33 +150,6 @@ public abstract class BaseActivity extends AppCompatActivity{
 
     public Handler getMainHandler() {
         return mainHandler;
-    }
-
-    public void showFilePermissinDialog() {
-        CustomDialog.build()
-                .setAutoUnsafePlacePadding(false)
-                .setCancelable(false)
-                .setCustomView(new OnBindView<CustomDialog>(R.layout.dialog_full_base) {
-                    @Override
-                    public void onBind(CustomDialog dialog, View v) {
-                        LinearLayout relativeLayout = v.findViewById(R.id.root_view);
-                        View inflate = View.inflate(mContext, R.layout.dialog_permissin_write, null);
-                        relativeLayout.removeAllViews();
-                        relativeLayout.addView(inflate);
-                        RealtimeBlurView blurView = v.findViewById(R.id.blur_view);
-                        translation(blurView);
-
-                        inflate.findViewById(R.id.cancel_button).setOnClickListener((view)->{
-                            dialog.dismiss();
-                        });
-
-                        inflate.findViewById(R.id.confirm_button).setOnClickListener((view)->{
-                            getWritePermission();
-                            dialog.dismiss();
-                        });
-                    }
-                })
-                .show();
     }
 
     public void showNotificationPermissinDialog() {

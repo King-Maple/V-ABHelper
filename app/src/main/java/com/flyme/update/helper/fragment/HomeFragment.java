@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -27,6 +28,7 @@ import android.widget.TextView;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 
@@ -47,6 +49,7 @@ import com.flyme.update.helper.bean.UpdateInfo;
 import com.flyme.update.helper.utils.UpdateParser;
 import com.flyme.update.helper.utils.Utils;
 import com.flyme.update.helper.widget.TouchFeedback;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.kongzue.dialogx.dialogs.BottomDialog;
 import com.kongzue.dialogx.dialogs.BottomMenu;
 import com.kongzue.dialogx.dialogs.InputDialog;
@@ -306,47 +309,29 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
         else if (id == R.id.help_button) {
-            MessageDialog.build()
-                    .setTitle("使用方法")
-                    .setMessage("准备工作：\n下载好与本设备对应的刷机包，并且给软件授予相应的权限\n\n使用方法：\n1. 点击“选择文件更新”按钮选择下载好的刷机包\n2. 弹出窗口，点击“开始更新”并等待结束\n3. 选择是否保留 Root \n4. 重启手机即可")
-                    .setOkButton("知道了")
-                    .show();
+            showErrorDialog("使用方法","准备工作：\n下载好与本设备对应的刷机包，并且给软件授予相应的权限\n\n使用方法：\n1. 点击“选择文件更新”按钮选择下载好的刷机包\n2. 弹出窗口，点击“开始更新”并等待结束\n3. 选择是否保留 Root \n4. 重启手机即可");
         } else if (id == R.id.waring_button) {
-            MessageDialog.build()
-                    .setTitle("注意事项")
-                    .setMessage("请确保选择的更新包是全量更新包，更新后完成后可自己完成保留ROOT操作。由于不正确操作或【意外】导致的损失，需自行承担！！！")
-                    .setOkButton("知道了")
-                    .show();
+            showErrorDialog("注意事项","请确保选择的更新包是全量更新包，更新后完成后可自己完成保留ROOT操作。由于不正确操作或【意外】导致的损失，需自行承担！！！");
         } else if (id == R.id.start_button) {
             if (UpdateServiceManager.getInstance().getService() == null) {
-                MessageDialog.build()
-                        .setTitle("温馨提示")
-                        .setMessage("服务未成功启动，请重试~")
-                        .setOkButton("知道了")
-                        .show();
+                showErrorDialog("温馨提示","服务未成功启动，请重试~");
                 return;
             }
 
             if (!UpdateServiceManager.getInstance().isValid()) {
-                MessageDialog.build()
-                        .setTitle("温馨提示")
-                        .setMessage("当前设备无法找到服务，请联系开发者尝试解决~")
-                        .setOkButton("知道了")
-                        .show();
+                showErrorDialog("温馨提示","当前设备无法找到服务，请联系开发者尝试解决~");
                 return;
             }
 
             NotificationManagerCompat notification = NotificationManagerCompat.from(activity);
             boolean isEnabled = notification.areNotificationsEnabled();
             if (!Config.isVab){
-                MessageDialog.build()
+                new MaterialAlertDialogBuilder(activity, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog_Centered)
                         .setTitle("温馨提示")
+                        .setCancelable(false)
                         .setMessage("本软件只支持V-AB分区的设备进行ROM刷写，不支持当前设备~")
-                        .setOkButton("关闭软件",(baseDialog, v) -> {
-                            activity.finish();
-                            return false;
-                        })
-                        .show();
+                        .setPositiveButton("关闭软件", (dialog, which) -> activity.finish())
+                        .create().show();
             } else if (!isEnabled) {
                 activity.showNotificationPermissinDialog();
             }
@@ -381,7 +366,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private void showErrorDialog(CharSequence title, CharSequence message) {
         WaitDialog.dismiss();
-        MessageDialog.show(title,message,"我知道了");
+        new MaterialAlertDialogBuilder(activity, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog_Centered)
+                .setTitle(title)
+                .setCancelable(false)
+                .setMessage(message)
+                .setPositiveButton("知道了", null)
+                .create().show();
     }
 
     private void startUpdate(String File) {
@@ -393,17 +383,17 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
         else {
             if (!TextUtils.isEmpty(uUpdateInfo.getFlymeid()) && !uUpdateInfo.getFlymeid().equals(Config.flymemodel)) {
-                MessageDialog.build()
+                new MaterialAlertDialogBuilder(activity, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog_Centered)
                         .setTitle("温馨提示")
+                        .setCancelable(false)
                         .setMessage("检测到选择的全量包是: " + uUpdateInfo.getBuildInfo() + ", 与您的设备不符，是否继续更新")
-                        .setOkButton("继续",(baseDialog, v) -> {
+                        .setPositiveButton("继续", (dialog, which) -> {
                             if (!UpdateServiceManager.getInstance().startUpdateSystem(uUpdateInfo, engineCallback)){
                                 showErrorDialog("更新失败","更新服务错误，请重试");
                             }
-                            return false;
                         })
-                        .setCancelButton("取消")
-                        .show();
+                        .setNegativeButton("取消",null)
+                        .create().show();
                 return;
             }
 

@@ -7,7 +7,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.flyme.update.helper.App;
+import com.flyme.update.helper.application.App;
 import com.flyme.update.helper.R;
 import com.kongzue.dialogx.dialogs.PopTip;
 

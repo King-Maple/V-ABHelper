@@ -1,4 +1,4 @@
-package com.flyme.update.helper;
+package com.flyme.update.helper.application;
 
 import android.annotation.SuppressLint;
 import android.app.Application;

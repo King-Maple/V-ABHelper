@@ -39,7 +39,7 @@ public class PatchUtils {
         this.aShell = Shell.getShell();
     }
 
-    private Result patchMagisk() {
+    public Result patchMagisk() {
         String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
         for (String file: envList) {
             if (!aFileSystemManager.getFile("/data/adb/magisk/" + file).exists()) {
@@ -95,7 +95,7 @@ public class PatchUtils {
         return new Result(ErrorCode.SUCCESS, "安装到未使用卡槽完成");
     }
 
-    private Result patchKernelSU() {
+    public Result patchKernelSU() {
 
         boolean isLkmMode = UpdateServiceManager.getInstance().KsuIsLkmMode();
 
@@ -150,7 +150,7 @@ public class PatchUtils {
         return new Result(ErrorCode.SUCCESS, "安装到未使用卡槽完成");
     }
 
-    private Result patchAPatch(String SuperKey) {
+    public Result patchAPatch(String SuperKey) {
 
         // 这里使用 Github 接口，获取 releases 最新版本号
         String rep = OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/latest.json")
@@ -218,7 +218,7 @@ public class PatchUtils {
         // 使用面具自带的脚本进行修补
         boolean isSuccess = aShell.newJob()
                 .add("cd " + aInstallDir)
-                .add("sh apatch.sh " + SuperKey + " " + aInstallDir + "/boot.img -K kpatch")
+                .add("sh apatch_patch.sh " + SuperKey + " " + aInstallDir + "/boot.img -K kpatch")
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();

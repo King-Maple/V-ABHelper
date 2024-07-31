@@ -68,6 +68,7 @@ import me.yowal.updatehelper.utils.IOUtils;
 import me.yowal.updatehelper.utils.InputDialogUtils;
 import me.yowal.updatehelper.utils.LogUtils;
 import me.yowal.updatehelper.utils.NotificationUtils;
+import me.yowal.updatehelper.utils.PatchUtils;
 import me.yowal.updatehelper.utils.TouchFeedUtils;
 import me.yowal.updatehelper.utils.Utils;
 import me.yowal.updatehelper.widget.ProgressButton;
@@ -85,6 +86,8 @@ public class MainActivity extends BaseActivity {
     private String aInstallDir;
 
     private UpdateInfo aUpdateInfo;
+
+    private PatchUtils aPatchUtils;
 
     private final TouchFeedUtils.OnFeedBackListener onFeedBackListener = new TouchFeedUtils.OnFeedBackListener() {
         @Override
@@ -186,7 +189,7 @@ public class MainActivity extends BaseActivity {
                     Shell.cmd("rm -r " + getFilesDir().toString()).exec();
                     Shell.cmd("mkdir " + getFilesDir().toString()).exec();
                     FileUtils.copyToFile(getAssets().open("magiskboot"), new File(getFilesDir(),"magiskboot"));
-                    FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch), new File(getFilesDir(),"apatch.sh"));
+                    FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch_patch), new File(getFilesDir(),"apatch_patch.sh"));
                     Shell.cmd("chmod -R 777 " + getFilesDir().toString()).exec();
                 } catch (IOException e) {
                     LogUtils.e("CheckRoot", e.getLocalizedMessage());
@@ -326,7 +329,7 @@ public class MainActivity extends BaseActivity {
                     UpdateServiceManager.getInstance().init(mUpdateService);
                     SuFileManager.getInstance().init(UpdateServiceManager.getInstance().getFileSystemManager());
                     initRootType();
-                    initPassFunctionOffset();
+                    //initPassFunctionOffset();
                 }
             }
 
@@ -349,6 +352,7 @@ public class MainActivity extends BaseActivity {
             binding.infoRootType.setText(String.format("Root实现：%s (%s)", "APatch", apatchVersion));
         else
             binding.infoRootType.setText(String.format("Root实现：%s", "None"));
+        aPatchUtils = new PatchUtils(aContext, aInstallDir);
     }
 
     private void initPassFunctionOffset() {
@@ -430,26 +434,8 @@ public class MainActivity extends BaseActivity {
         aUpdateInfo = UpdateServiceManager.getInstance().pareZip(File);
         if (aUpdateInfo.getHeaderKeyValuePairs() == null || aUpdateInfo.getHeaderKeyValuePairs().length == 0) {
             showErrorDialog("更新失败","更新包不完整，请重新下载");
-        } else if (aUpdateInfo.getType() != -1 && aUpdateInfo.getType() != 1) {
-            showErrorDialog("更新失败","更新包非全量包，请下载全量包");
         }
         else {
-            //如果是魅族的就判断下型号吧
-            if (!TextUtils.isEmpty(aUpdateInfo.getFlymeid()) && !aUpdateInfo.getFlymeid().equals(Config.flymemodel)) {
-                new MaterialAlertDialogBuilder(aContext)
-                        .setTitle("温馨提示")
-                        .setCancelable(false)
-                        .setMessage("检测到选择的全量包是: " + aUpdateInfo.getBuildInfo() + ", 与您的设备不符，是否继续更新")
-                        .setPositiveButton("继续", (dialog, which) -> {
-                            if (!UpdateServiceManager.getInstance().startUpdateSystem(aUpdateInfo, engineCallback)){
-                                showErrorDialog("更新失败","更新服务错误，请重试");
-                            }
-                        })
-                        .setNegativeButton("取消",null)
-                        .create().show();
-                return;
-            }
-
             if (!UpdateServiceManager.getInstance().startUpdateSystem(aUpdateInfo, engineCallback)){
                 showErrorDialog("更新失败","更新服务错误，请重试");
             }
@@ -457,7 +443,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updateSuccess() {
-        BottomMenu.show("更新成功", "恭喜你看到我了，现在轮到你选择保留 Root 的方式了，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSu", "APatch"})
+        BottomMenu.show("更新成功", "恭喜你看到我了，现在轮到你选择保留 Root 的方式了，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSU", "APatch"})
                 .setOnIconChangeCallBack(new OnIconChangeCallBack<BottomMenu>(true) {
                     @Override
                     public int getIcon(BottomMenu bottomMenu, int index, String menuText) {
@@ -475,41 +461,32 @@ public class MainActivity extends BaseActivity {
                 .setOnMenuItemClickListener((dialog, text, index) -> {
                     dialog.dismiss();
                     flashStart();
-                    switch (index) {
-                        case 0:
-                            getASynHandler().post(this::patchMagisk);
-                            return false;
-                        case 1:
-                            getASynHandler().post(this::patchKernelSU);
-                            return false;
-                        case 2:
-                            getMainHandler().post(() -> InputDialogUtils.show(aContext, "设定超级密钥", "内核补丁的唯一密钥，密钥长度最少8位数，且最少含有一位字母", new InputDialogUtils.OnInputClickListener() {
-                                @Override
-                                public boolean onClick(DialogInterface dialog, DialogInputBinding bindingiput, boolean isCancel) {
-                                    if (isCancel) {
-                                        flashFinish();
-                                        return false;
-                                    }
-                                    String inputStr = bindingiput.mEditText.getText().toString();
-                                    if (TextUtils.isEmpty(inputStr)) {
-                                        toast("请输入超级密钥！");
-                                        return true;
-                                    }
+                    if (index < 2) {
+                        getMainHandler().post(() -> InputDialogUtils.show(aContext, "设定超级密钥", "内核补丁的唯一密钥，密钥长度最少8位数，且最少含有一位字母", (dialog1, bindingiput, isCancel) -> {
+                            if (isCancel) {
+                                flashFinish();
+                                return false;
+                            }
+                            String inputStr = bindingiput.mEditText.getText().toString();
+                            if (TextUtils.isEmpty(inputStr)) {
+                                toast("请输入超级密钥！");
+                                return true;
+                            }
 
-                                    if (inputStr.length() < 8) {
-                                        toast("输入的超级密钥长度小于8");
-                                        return true;
-                                    }
+                            if (inputStr.length() < 8) {
+                                toast("输入的超级密钥长度小于8");
+                                return true;
+                            }
 
-                                    if (!Utils.keyChecked(inputStr)) {
-                                        toast("超级密钥格式错误，请检查是否只含有数字和字母");
-                                        return true;
-                                    }
-                                    getASynHandler().post(() -> patchAPatch(inputStr));
-                                    return false;
-                                }
-                            }));
+                            if (!Utils.keyChecked(inputStr)) {
+                                toast("超级密钥格式错误，请检查是否只含有数字和字母");
+                                return true;
+                            }
+                            getASynHandler().post(() -> patchBoot(text.toString(),inputStr));
                             return false;
+                        }));
+                    } else {
+                        getASynHandler().post(() -> patchBoot(text.toString(),""));
                     }
                     return false;
                 })
@@ -523,226 +500,27 @@ public class MainActivity extends BaseActivity {
                 });
     }
 
-    private void patchAPatch(String SuperKey) {
-
+    private void patchBoot(String rootType, String SuperKey) {
         binding.buttonProgress.setState(ProgressButton.STATE_FINISH);
-        binding.buttonProgress.setCurrentText("开始安装 APatch");
-
-        // 这里使用 Github 接口，获取 releases 最新版本号
-        String rep = OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/latest.json")
-                .get()
-                .getBody().toString();
-
-
-        String lastTag = "";
-        try {
-            JSONObject jsonObject = new JSONObject(rep);
-            lastTag = jsonObject.getString("tag_name");
-        } catch (Exception e) {
-            LogUtils.e("patchAPatch", e.getLocalizedMessage());
+        binding.buttonProgress.setCurrentText("开始安装 " + rootType);
+        PatchUtils.Result reslut = new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR,"错误类型");
+        switch (rootType) {
+            case "Magisk":
+                reslut = aPatchUtils.patchMagisk();
+                break;
+            case "KernelSU":
+                reslut = aPatchUtils.patchKernelSU();
+                break;
+            case "APatch":
+                reslut = aPatchUtils.patchAPatch(SuperKey);
+                break;
         }
-        if (TextUtils.isEmpty(lastTag)) {
-            showRebootDialog("安装失败","APatch 版本获取失败，请自行操作");
-            return;
-        }
-
-        FileUtils.delete(aInstallDir + "/kpimg");
-
-        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kpimg")
-                .get()
-                .getBody()
-                .toFile(aInstallDir + "/kpimg")
-                .start();
-
-        FileUtils.delete(aInstallDir + "/kptools");
-
-        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kptools")
-                .get()
-                .getBody()
-                .toFile(aInstallDir + "/kptools")
-                .start();
-
-        FileUtils.delete(aInstallDir + "/kpatch");
-        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kpatch")
-                .get()
-                .getBody()
-                .toFile(aInstallDir + "/kpatch")
-                .start();
-
-        ShellUtils.fastCmd("chmod -R 777 " + aInstallDir);
-
-        String[] envList = new String[]{"kptools", "magiskboot", "kpimg", "kpatch"};
-        for (String file: envList) {
-            if (!new File(aInstallDir + "/" + file).exists()) {
-                showRebootDialog("修补失败",file + " 文件不存在，请自行修补");
-                return;
-            }
-        }
-
-        // 读取当前分区，用来判断第二分区
-        String slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
-
-        // 提取第二分区的boot镜像
-        String srcBoot = "/dev/block/bootdevice/by-name/boot" + slot;
-
-        FileUtils.delete(aInstallDir + "/boot.img");
-        FileUtils.delete(aInstallDir + "/apatch_patch.img");
-
-        if (!FlashUtils.extract_image(srcBoot,aInstallDir + "/boot.img")) {
-            showRebootDialog("安装失败","镜像分区提取错误，请自行操作");
-            return;
-        }
-
-        List<String> stdout = new ArrayList<>();
-        // 使用面具自带的脚本进行修补
-        boolean isSuccess = Shell.getShell().newJob()
-                .add("cd " + aInstallDir)
-                .add("sh apatch.sh " + SuperKey + " " + aInstallDir + "/boot.img -K kpatch")
-                .to(stdout, stdout)
-                .exec()
-                .isSuccess();
-        if (!isSuccess) {
-            showErrorDialog(String.join("\n", stdout));
-            return;
-        }
-
-        Shell.getShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
-
-        if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot)) {
-            showRebootDialog("安装失败","刷入镜像失败，请自行操作");
-            return;
-        }
-        showRebootDialog("安装成功","安装到未使用卡槽完成");
-    }
-
-    private void patchKernelSU() {
-
-        binding.buttonProgress.setState(ProgressButton.STATE_FINISH);
-        binding.buttonProgress.setCurrentText("开始安装 KernelSU");
-
-        boolean isLkmMode = UpdateServiceManager.getInstance().KsuIsLkmMode();
-
-        // 读取当前分区，用来判断第二分区
-        String next_slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
-
-        // 非 LKM 模式直接提取当前分区刷入第二分区
-        if (!isLkmMode && !FlashUtils.flash_image("/dev/block/bootdevice/by-name/boot" + Config.currentSlot, "/dev/block/bootdevice/by-name/boot" + next_slot)) {
-            showRebootDialog("安装失败","刷入镜像失败，请自行操作");
-            return;
-        }
-
-
-        //检查 ksud 文件是否存在
-        if (!SuFileManager.getInstance().getRemote().getFile("/data/adb/ksud").exists()) {
-            showRebootDialog("修补失败","KernelSu 环境不全，请自行操作");
-            return;
-        }
-
-        //ksud boot-patch -b <boot.img> --kmi android13-5.10
-
-        // 提取第二分区的boot镜像
-        String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
-        if (!SuFileManager.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
-            srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
-        }
-
-        ShellUtils.fastCmd("rm -r " + aInstallDir + "/*.img");
-
-        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
-            showRebootDialog("安装失败","镜像分区提取错误，请自行操作");
-            return;
-        }
-
-
-        List<String> stdout = new ArrayList<>();
-        boolean isSuccess = Shell.getShell().newJob()
-                .add("cd " + aInstallDir)
-                .add("/data/adb/ksud boot-patch --magiskboot " + aInstallDir +  "/magiskboot -b " + aInstallDir + "/boot.img")
-                .to(stdout, stdout)
-                .exec()
-                .isSuccess();
-        if (!isSuccess) {
-            showErrorDialog(String.join("\n", stdout));
-            return;
-        }
-
-
-        String patch_img = ShellUtils.fastCmd("cd " + aInstallDir + " & ls kernelsu_*.img");
-        if (TextUtils.isEmpty(patch_img)) {
-            showRebootDialog("安装失败","获取修补文件错误，请自行操作");
-            return;
-        }
-
-        if (!FlashUtils.flash_image(aInstallDir + "/" + patch_img, srcBoot)) {
-            showRebootDialog("安装失败","刷入镜像失败，请自行操作");
-            return;
-        }
-
-        showRebootDialog("安装成功","安装到未使用卡槽完成");
-    }
-
-    private void patchMagisk() {
-
-        binding.buttonProgress.setState(ProgressButton.STATE_FINISH);
-        binding.buttonProgress.setCurrentText("开始安装 Magisk");
-
-        String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
-        for (String file: envList) {
-            if (!SuFileManager.getInstance().getRemote().getFile("/data/adb/magisk/" + file).exists()) {
-                showRebootDialog("修补失败","Magisk 环境不全，请自行操作");
-                return;
-            }
-        }
-
-        try {
-            ExtendedFile stub = SuFileManager.getInstance().getRemote().getFile("/data/adb/magisk/stub.apk");
-            if (!stub.exists()) {
-                OutputStream out = stub.newOutputStream();
-                IOUtils.copy(getAssets().open("stub.apk"), out);
-            }
-        } catch (IOException e) {
-            showRebootDialog("修补失败","面具环境不全，请自行操作");
-        }
-
-        // 读取当前分区，用来判断第二分区
-        String next_slot = Config.currentSlot.equals("_a") ? "_b" : "_a";
-
-        // 提取第二分区的boot镜像
-        String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
-        if (!SuFileManager.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
-            srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
-        }
-
-        FileUtils.delete(aInstallDir + "/boot.img");
-        FileUtils.delete(aInstallDir + "/magisk_patch.img");
-
-        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
-            showRebootDialog("安装失败","镜像分区提取错误，请自行操作");
-            return;
-        }
-        List<String> stdout = new ArrayList<>();
-        // 使用面具自带的脚本进行修补
-        boolean isSuccess = Shell.getShell().newJob()
-                .add("cd /data/adb/magisk")
-                .add("KEEPFORCEENCRYPT=" + Config.keepEnc + " " +
-                        "KEEPVERITY=" + Config.keepVerity + " " +
-                        "PATCHVBMETAFLAG=" + Config.patchVbmeta + " "+
-                        "RECOVERYMODE=" + Config.recovery + " "+
-                        "SYSTEM_ROOT=" + Config.isSAR + " " +
-                        "sh boot_patch.sh " + aInstallDir + "/boot.img")
-                .to(stdout, stdout)
-                .exec()
-                .isSuccess();
-        if (!isSuccess) {
-            showErrorDialog(String.join("\n", stdout));
-            return;
-        }
-        Shell.getShell().newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
-        if (!FlashUtils.flash_image(aInstallDir + "/magisk_patch.img", srcBoot)) {
-            showRebootDialog("安装失败","刷入镜像失败，请自行操作");
-            return;
-        }
-        showRebootDialog("安装成功","安装到未使用卡槽完成");
+        if (reslut.errorCode == PatchUtils.ErrorCode.SUCCESS)
+            showRebootDialog("安装成功","安装到未使用卡槽完成");
+        else if (reslut.errorCode == PatchUtils.ErrorCode.EXEC_ERROR)
+            showErrorDialog(reslut.errorMessage);
+        else
+            showRebootDialog("安装失败", reslut.errorMessage);
     }
 
 }

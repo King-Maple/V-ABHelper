@@ -10,11 +10,13 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import me.yowal.updatehelper.Natives;
 import me.yowal.updatehelper.bean.UpdateInfo;
+import me.yowal.updatehelper.manager.UpdateServiceManager;
+import me.yowal.updatehelper.service.UpdateService;
 
 public class UpdateUtils {
     private static final String FILE_URL_PREFIX = "file://";
-
 
     private static long getOffset(ZipEntry zipEntry, String str) {
         return (zipEntry.getMethod() != 0 ? 16 : 0) + 30 + str.length() + zipEntry.getCompressedSize() + (zipEntry.getExtra() != null ? zipEntry.getExtra().length : 0);
@@ -72,10 +74,11 @@ public class UpdateUtils {
                                 mUpdateInfo.setBuildInfo(matcher.group(1));
                         }
                     }
-                } else if ("type.txt".equals(name)) {
-                    String example = IOUtils.toString(zipFile.getInputStream(nextElement));
-                    LogUtils.d("UpdateUtils", example);
-                    mUpdateInfo.setType(Integer.parseInt(example));
+                } else if ("META-INF/com/android/metadata.pb".equals(name)) {
+                    byte[] example = IOUtils.toByteArray(zipFile.getInputStream(nextElement));
+                    boolean isOta = Natives.isOtaZip(example);
+                    LogUtils.d("UpdateUtils", "isOta = " + isOta);
+                    mUpdateInfo.setType(isOta ? 1 : 0);
                 }
             }
         } catch (IOException e) {

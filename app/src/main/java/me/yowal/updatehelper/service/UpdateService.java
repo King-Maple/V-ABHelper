@@ -153,6 +153,11 @@ public class UpdateService extends RootService {
         }
 
         @Override
+        public boolean isOtaZip(byte[] metadata_pb_data)  {
+            return Natives.isOtaZip(metadata_pb_data);
+        }
+
+        @Override
         public UpdateInfo parseZip(String file)  {
             return UpdateUtils.parse(file);
         }

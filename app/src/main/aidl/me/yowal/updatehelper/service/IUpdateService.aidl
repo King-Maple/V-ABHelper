@@ -27,4 +27,6 @@ interface IUpdateService {
     int findValidateSourceHash();
 
     void passValidateSourceHash(String lib, int offset);
+
+    boolean isOtaZip(in byte[] metadata_pb_data);
 }

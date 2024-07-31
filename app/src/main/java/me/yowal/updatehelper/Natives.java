@@ -10,4 +10,6 @@ public class Natives {
     public static native void passValidateSourceHash(String lib, int offset);
 
     public static native int findValidateSourceHash();
+
+    public static native boolean isOtaZip(byte[] metadata_pb_data);
 }

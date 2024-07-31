@@ -461,7 +461,7 @@ public class MainActivity extends BaseActivity {
                 .setOnMenuItemClickListener((dialog, text, index) -> {
                     dialog.dismiss();
                     flashStart();
-                    if (index < 2) {
+                    if (index == 2) {
                         getMainHandler().post(() -> InputDialogUtils.show(aContext, "设定超级密钥", "内核补丁的唯一密钥，密钥长度最少8位数，且最少含有一位字母", (dialog1, bindingiput, isCancel) -> {
                             if (isCancel) {
                                 flashFinish();

@@ -138,16 +138,16 @@ bool injectLibraryToRemote(int pid,const char* library_path,const char* symbol_n
 extern "C" {
     JNICALL jboolean isOtaZip(JNIEnv * env , jclass clazz, jbyteArray bytearray) {
         build::tools::releasetools::OtaMetadata OtaMetadata;
+        bool result = false;
         jbyte * bytes = env->GetByteArrayElements(bytearray, nullptr);
         int bytes_len = env->GetArrayLength(bytearray);
-        char *buf = new char[bytes_len + 1];
+        char *buf = (char *)calloc(bytes_len + 1, 1);
         memcpy(buf, bytes, bytes_len);
         env->ReleaseByteArrayElements(bytearray, bytes, 0);
-        OtaMetadata.ParseFromArray(buf, bytes_len);
-        if (!OtaMetadata.precondition().partition_state().empty()) {
-            LOGD("ota包");
-        }
-        return get_version();
+        if (OtaMetadata.ParseFromArray(buf, bytes_len))
+            result = !OtaMetadata.precondition().partition_state().empty();
+        free(buf);
+        return result;
     }
 
     JNICALL jint GetVersion(JNIEnv * env , jclass clazz) {
@@ -200,6 +200,7 @@ static JNINativeMethod getMethods[] = {
         {"isLkmMode", "()Z", (void *) isLkmMode},
         {"passValidateSourceHash", "(Ljava/lang/String;I)V", (void *) passValidateSourceHash},
         {"findValidateSourceHash", "()I", (void *) findValidateSourceHash},
+        {"isOtaZip", "([B)Z", (void *) isOtaZip},
 };
 
 //此函数通过调用JNI中 RegisterNatives 方法来注册我们的函数

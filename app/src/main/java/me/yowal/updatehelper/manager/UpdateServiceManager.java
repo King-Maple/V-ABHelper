@@ -121,4 +121,13 @@ public class UpdateServiceManager {
             return -1;
         }
     }
+
+    public boolean isOtaZip(byte[] metadata_pb_data) {
+        try {
+            return this.uNativeService.isOtaZip(metadata_pb_data);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

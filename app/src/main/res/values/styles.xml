@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/apk/res-auto">
+    <style name="MyMaterialComponentsButtonPrimary" parent="Widget.Material3.Button">
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:textColor">?attr/colorOnPrimary</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
+        <item name="iconTint">?attr/colorOnPrimary</item>
+        <item name="android:stateListAnimator" ns1:ignore="NewApi">@null</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:paddingStart" ns1:ignore="NewApi">16dp</item>
+        <item name="android:paddingEnd" ns1:ignore="NewApi">16dp</item>
+        <item name="cornerRadius">@dimen/mtrl_btn_corner_radius</item>
+    </style>
+
+    <style name="MyMaterialComponentsButtonTextPrimary" parent="Widget.Material3.Button">
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:textColor">?attr/colorPrimaryContainer</item>
+        <item name="iconTint">?attr/colorPrimaryContainer</item>
+        <item name="backgroundTint">#00000000</item>
+        <item name="android:stateListAnimator" ns1:ignore="NewApi">@null</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:paddingStart" ns1:ignore="NewApi">16dp</item>
+        <item name="android:paddingEnd" ns1:ignore="NewApi">16dp</item>
+        <item name="cornerRadius">@dimen/mtrl_btn_corner_radius</item>
+        <item name="rippleColor">@color/m3_button_background_color_selector</item>
+    </style>
+</resources>

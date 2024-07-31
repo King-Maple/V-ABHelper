@@ -50,6 +50,10 @@ add_library(kernelsu
         jni.cc
         ksu.cc
 
+		${libprotobuf_lite_files}
+
+		proto/ota_metadata.pb.cc
+
 		utils/elf_util.cc
 		utils/lsplt.cc
 		utils/inject.cpp

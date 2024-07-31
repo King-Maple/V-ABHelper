@@ -468,16 +468,10 @@ public class MainActivity extends BaseActivity {
                                 return false;
                             }
                             String inputStr = bindingiput.mEditText.getText().toString();
-                            if (TextUtils.isEmpty(inputStr)) {
-                                toast("请输入超级密钥！");
-                                return true;
-                            }
-
                             if (inputStr.length() < 8) {
                                 toast("输入的超级密钥长度小于8");
                                 return true;
                             }
-
                             if (!Utils.keyChecked(inputStr)) {
                                 toast("超级密钥格式错误，请检查是否只含有数字和字母");
                                 return true;
@@ -522,5 +516,4 @@ public class MainActivity extends BaseActivity {
         else
             showRebootDialog("安装失败", reslut.errorMessage);
     }
-
 }

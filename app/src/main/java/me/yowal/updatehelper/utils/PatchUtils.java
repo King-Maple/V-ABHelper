@@ -165,6 +165,7 @@ public class PatchUtils {
         } catch (Exception e) {
             LogUtils.e("patchAPatch", e.getLocalizedMessage());
         }
+
         if (TextUtils.isEmpty(lastTag)) {
             return new Result(ErrorCode.OTHER_ERROR, "APatch 版本获取失败，请自行操作");
         }

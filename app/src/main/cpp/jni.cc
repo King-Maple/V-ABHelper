@@ -10,6 +10,9 @@
 #include <inject.h>
 #include <asm-generic/unistd.h>
 #include "ksu.h"
+#include "ota_metadata.pb.h"
+#include <fstream>
+#include <iostream>
 
 uintptr_t writeMemory(InjectTools* injectTools, uintptr_t *address, void* data, size_t size){
     uintptr_t ret = *address;
@@ -133,15 +136,29 @@ bool injectLibraryToRemote(int pid,const char* library_path,const char* symbol_n
 
 
 extern "C" {
-    JNICALL jint GetVersion(JNIEnv * env , jclass clazz ) {
+    JNICALL jboolean isOtaZip(JNIEnv * env , jclass clazz, jbyteArray bytearray) {
+        build::tools::releasetools::OtaMetadata OtaMetadata;
+        jbyte * bytes = env->GetByteArrayElements(bytearray, nullptr);
+        int bytes_len = env->GetArrayLength(bytearray);
+        char *buf = new char[bytes_len + 1];
+        memcpy(buf, bytes, bytes_len);
+        env->ReleaseByteArrayElements(bytearray, bytes, 0);
+        OtaMetadata.ParseFromArray(buf, bytes_len);
+        if (!OtaMetadata.precondition().partition_state().empty()) {
+            LOGD("ota包");
+        }
         return get_version();
     }
 
-    JNICALL jboolean isSafeMode(JNIEnv *env, jclass clazz ) {
+    JNICALL jint GetVersion(JNIEnv * env , jclass clazz) {
+        return get_version();
+    }
+
+    JNICALL jboolean isSafeMode(JNIEnv *env, jclass clazz) {
         return is_safe_mode();
     }
 
-    JNICALL jboolean isLkmMode(JNIEnv *env, jclass clazz ) {
+    JNICALL jboolean isLkmMode(JNIEnv *env, jclass clazz) {
         return is_lkm_mode();
     }
 
@@ -172,6 +189,8 @@ extern "C" {
         int pid =  get_pid_by_name("/system/bin/update_engine");
         return findValidateFunction(pid);
     }
+
+
 }
 
 

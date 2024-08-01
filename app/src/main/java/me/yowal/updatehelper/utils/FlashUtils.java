@@ -35,15 +35,19 @@ public class FlashUtils {
         }
     }
 
-    //提取镜像
-    public static boolean extract_image(String img, String block) {
+    /**
+     * @param block 提取保存的路径
+     * @param img 需要提取分区的路径
+     * @return 提取状态
+     */
+    public static boolean extract_image(String block, String img) {
         try {
-            ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(img);
+            ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(block);
             if (!bootBlock.exists()) {
                 LogUtils.e("extract_image", "img file no exists");
                 return false;
             }
-            ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(block);
+            ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);
             InputStream in = bootBlock.newInputStream();
             OutputStream out = bootBackup.newOutputStream();
             return IOUtils.copy(in, out) > 0;

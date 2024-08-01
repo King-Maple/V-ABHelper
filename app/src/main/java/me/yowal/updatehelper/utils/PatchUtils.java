@@ -62,7 +62,7 @@ public class PatchUtils {
 
         // 提取第二分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + next_slot;
-        if (!SuFileManager.getInstance().getRemote().getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 
@@ -88,6 +88,14 @@ public class PatchUtils {
         if (!isSuccess) {
             return new Result(ErrorCode.EXEC_ERROR, String.join("\n", stdout));
         }
+
+        // 如果存在sha1值，则进行备份操作
+        String sha1 = ShellUtils.fastCmd(aShell, "echo $SHA1");
+        if (!TextUtils.isEmpty(sha1)) {
+
+        }
+
+
         aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
         if (!FlashUtils.flash_image(aInstallDir + "/magisk_patch.img", srcBoot)) {
             return new Result(ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");

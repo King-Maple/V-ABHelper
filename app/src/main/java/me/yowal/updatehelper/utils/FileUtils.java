@@ -72,6 +72,10 @@ public class FileUtils {
         return new File(file).delete();
     }
 
+    public static String getName(String file) {
+        return new File(file).getName();
+    }
+
     public static String getFileMD5(String file) {
         try {
             byte[] buffer = new byte[1024];

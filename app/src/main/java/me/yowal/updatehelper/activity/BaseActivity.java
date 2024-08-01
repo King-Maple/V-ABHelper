@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.ReturnThis;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LifecycleOwner;
 
@@ -41,6 +42,11 @@ public class BaseActivity extends AppCompatActivity {
                 .statusBarDarkFont(true)
                 .navigationBarDarkIcon(true)
                 .init();
+    }
+
+
+    public void showDialog(AlertDialog dialog) {
+        mainHandler.post(dialog::show);
     }
 
 

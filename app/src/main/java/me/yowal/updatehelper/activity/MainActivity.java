@@ -22,6 +22,7 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -69,6 +70,7 @@ import me.yowal.updatehelper.utils.InputDialogUtils;
 import me.yowal.updatehelper.utils.LogUtils;
 import me.yowal.updatehelper.utils.NotificationUtils;
 import me.yowal.updatehelper.utils.PatchUtils;
+import me.yowal.updatehelper.utils.RestoreUtils;
 import me.yowal.updatehelper.utils.TouchFeedUtils;
 import me.yowal.updatehelper.utils.Utils;
 import me.yowal.updatehelper.widget.ProgressButton;
@@ -88,6 +90,10 @@ public class MainActivity extends BaseActivity {
     private UpdateInfo aUpdateInfo;
 
     private PatchUtils aPatchUtils;
+
+    private RestoreUtils aRestoreUtils;
+
+    private boolean supportOta = false;
 
     private final TouchFeedUtils.OnFeedBackListener onFeedBackListener = new TouchFeedUtils.OnFeedBackListener() {
         @Override
@@ -121,7 +127,7 @@ public class MainActivity extends BaseActivity {
                 boolean hasDisplayid = !TextUtils.isEmpty(aUpdateInfo.getDisplayid());
                 aNotificationManager.notify(1, NotificationUtils.notifyMsg(aContext, hasDisplayid ? aUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
-                showErrorDialog("更新失败!","哎呀，开了个小差，更新失败了，错误代号：" + error_code );
+                showDialog("更新失败!","哎呀，开了个小差，更新失败了，错误代号：" + error_code );
                 aNotificationManager.notify(1, NotificationUtils.notifyMsg(aContext,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了，错误代号：" + error_code));
             }
         }
@@ -148,7 +154,7 @@ public class MainActivity extends BaseActivity {
                 if (!FlashUtils.modifyPrivate(aInstallDir)) {
                     LogUtils.e("onStatusUpdate", "modifyPrivate fail");
                     UpdateServiceManager.getInstance().cancel();
-                    showErrorDialog("温馨提示","更新失败!" );
+                    showDialog("温馨提示","更新失败!" );
                     aNotificationManager.notify(1, NotificationUtils.notifyMsg(aContext,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了"));
                     return;
                 }
@@ -225,12 +231,12 @@ public class MainActivity extends BaseActivity {
         //注册刷写按钮
         binding.buttonFlash.setOnClickListener(v -> {
             if (UpdateServiceManager.getInstance().getService() == null) {
-                showErrorDialog("温馨提示","服务未成功启动，请重试~");
+                showDialog("温馨提示","服务未成功启动，请重试~");
                 return;
             }
 
             if (!UpdateServiceManager.getInstance().isValid()) {
-                showErrorDialog("温馨提示","当前设备无法找到服务，请联系开发者尝试解决~");
+                showDialog("温馨提示","当前设备无法找到服务，请联系开发者尝试解决~");
                 return;
             }
 
@@ -255,8 +261,7 @@ public class MainActivity extends BaseActivity {
                             .setCancelable(false)
                             .setMessage(filePath)
                             .setPositiveButton("开始更新", (dialog, which) -> {
-                                flashStart(ProgressButton.STATE_FINISH, "准备更新");
-                                getASynHandler().postDelayed(() -> startUpdate(filePath), 500);
+                                getASynHandler().post(() -> readyUpdate(filePath));
                             })
                             .setNegativeButton("取消更新", null)
                             .create().show();
@@ -328,8 +333,7 @@ public class MainActivity extends BaseActivity {
                 if (mUpdateService != null) {
                     UpdateServiceManager.getInstance().init(mUpdateService);
                     SuFileManager.getInstance().init(UpdateServiceManager.getInstance().getFileSystemManager());
-                    initRootType();
-                    //initPassFunctionOffset();
+                    initRootAndOta();
                 }
             }
 
@@ -340,7 +344,7 @@ public class MainActivity extends BaseActivity {
         });
     }
 
-    private void initRootType() {
+    private void initRootAndOta() {
         ksuVersion = UpdateServiceManager.getInstance().GetKsuVersion();
         String magiskVersion = ShellUtils.fastCmd("magisk -V");
         String apatchVersion = ShellUtils.fastCmd("cat /data/adb/ap/version");
@@ -352,7 +356,27 @@ public class MainActivity extends BaseActivity {
             binding.infoRootType.setText(String.format("Root实现：%s (%s)", "APatch", apatchVersion));
         else
             binding.infoRootType.setText(String.format("Root实现：%s", "None"));
+
+        //判断是否支持增量更新
+        if (ksuVersion > 0 && UpdateServiceManager.getInstance().KsuIsLkmMode()) {
+            supportOta = true;
+            binding.infoSupportOta.setText(String.format("OTA更新：%s", "支持"));
+        }
+        else if (!TextUtils.isEmpty(magiskVersion)) {
+            supportOta = true;
+            binding.infoSupportOta.setText(String.format("OTA更新：%s", "支持"));
+        }
+        else if (!TextUtils.isEmpty(apatchVersion)) {
+            supportOta = true;
+            binding.infoSupportOta.setText(String.format("OTA更新：%s", "支持"));
+        }
+        else {
+            supportOta = false;
+            binding.infoSupportOta.setText(String.format("OTA更新：%s", "不支持"));
+        }
+
         aPatchUtils = new PatchUtils(aContext, aInstallDir);
+        aRestoreUtils = new RestoreUtils(aContext, aInstallDir);
     }
 
     private void initPassFunctionOffset() {
@@ -384,62 +408,128 @@ public class MainActivity extends BaseActivity {
         getMainHandler().post(() -> {
             binding.buttonFlash.setVisibility(View.GONE);
             binding.buttonProgress.setVisibility(View.VISIBLE);
-            binding.buttonProgress.setState(state);
-            binding.buttonProgress.setCurrentText(text);
+            if (state > -1)
+                binding.buttonProgress.setState(state);
+            if (!TextUtils.isEmpty(text))
+                binding.buttonProgress.setCurrentText(text);
         });
     }
 
-    private void flashStart() {
-        getMainHandler().post(() -> {
-            binding.buttonFlash.setVisibility(View.GONE);
-            binding.buttonProgress.setVisibility(View.VISIBLE);
-        });
-    }
-
-    private void showErrorDialog(String title, CharSequence message) {
+    private MaterialAlertDialogBuilder CreateMaterialAlertDialogBuilder() {
         flashFinish();
-        getMainHandler().post(() -> new MaterialAlertDialogBuilder(aContext)
+        return new MaterialAlertDialogBuilder(aContext);
+    }
+
+    private void showDialog(String title, CharSequence message) {
+        AlertDialog dialog = CreateMaterialAlertDialogBuilder()
                 .setTitle(title)
                 .setCancelable(false)
                 .setMessage(message)
                 .setPositiveButton("知道了", null)
-                .create().show());
-
+                .create();
+        showDialog(dialog);
     }
 
-    private void showErrorDialog(String error) {
-        flashFinish();
-        getMainHandler().post(() -> new MaterialAlertDialogBuilder(aContext)
+    private void showPatchErrorDialog(String error) {
+        AlertDialog alertDialog = CreateMaterialAlertDialogBuilder()
                 .setTitle("修补失败")
                 .setCancelable(false)
                 .setMessage("运行修补脚本失败，是否查看错误信息")
                 .setPositiveButton("重启", (dialog, which) -> Utils.reboot())
-                .setNegativeButton("查看", (dialog, which) -> showErrorDialog("错误信息", error))
+                .setNegativeButton("查看", (dialog, which) -> showDialog("错误信息", error))
                 .setNeutralButton("取消",null)
-                .create().show());
+                .create();
+        showDialog(alertDialog);
     }
 
     private void showRebootDialog(String title,String message) {
-        flashFinish();
-        getMainHandler().post(() -> new MaterialAlertDialogBuilder(aContext)
+        AlertDialog alertDialog = CreateMaterialAlertDialogBuilder()
                 .setTitle(title)
                 .setCancelable(false)
                 .setMessage(message)
                 .setPositiveButton("重启", (dialog, which) -> Utils.reboot())
                 .setNegativeButton("稍后重启", null)
-                .create().show());
+                .create();
+        showDialog(alertDialog);
     }
 
-    private void startUpdate(String File) {
+    private void readyUpdate(String File) {
         aUpdateInfo = UpdateServiceManager.getInstance().pareZip(File);
         if (aUpdateInfo.getHeaderKeyValuePairs() == null || aUpdateInfo.getHeaderKeyValuePairs().length == 0) {
-            showErrorDialog("更新失败","更新包不完整，请重新下载");
+            showDialog("温馨提示","更新包不完整，请重新下载");
+            return;
         }
-        else {
-            if (!UpdateServiceManager.getInstance().startUpdateSystem(aUpdateInfo, engineCallback)){
-                showErrorDialog("更新失败","更新服务错误，请重试");
-            }
+        // 增量包
+        if (aUpdateInfo.getType() == 1 && supportOta) {
+            shouldResoteBoot();
+            return;
         }
+        getASynHandler().postDelayed(this::startUpdate, 500);
+    }
+
+
+    private void startUpdate() {
+        flashStart(ProgressButton.STATE_FINISH, "准备更新");
+        if (!UpdateServiceManager.getInstance().startUpdateSystem(aUpdateInfo, engineCallback)){
+            showDialog("更新失败","更新服务错误，请重试");
+        }
+    }
+
+
+    private void shouldResoteBoot() {
+        flashStart(ProgressButton.STATE_FINISH, "准备还原");
+        BottomMenu.show("还原提示", "检测到你选择的 ROM 包可能为增量包，需要还原镜像才能，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSU", "APatch"})
+                .setOnIconChangeCallBack(new OnIconChangeCallBack<BottomMenu>(true) {
+                    @Override
+                    public int getIcon(BottomMenu bottomMenu, int index, String menuText) {
+                        switch (index) {
+                            case 0:
+                                return R.drawable.ic_launcher_magisk;
+                            case 1:
+                                return R.drawable.ic_launcher_kernelsu;
+                            case 2:
+                                return R.drawable.ic_launcher_apatch;
+                        }
+                        return 0;
+                    }
+                })
+                .setCancelable(false)
+                .setOnMenuItemClickListener((dialog, text, index) -> {
+                    getASynHandler().postDelayed(() -> restoreBoot(text.toString()), 500);
+                    return false;
+                })
+                .setOkButton("不还原，继续更新", (OnDialogButtonClickListener<BottomDialog>) (dialog, v) -> {
+                    getASynHandler().postDelayed(this::startUpdate, 500);
+                    return false;
+                })
+                .setCancelButton("退出更新", (OnDialogButtonClickListener<BottomDialog>) (dialog, v) -> {
+                    flashFinish();
+                    return false;
+                });
+    }
+
+    private void restoreBoot(String rootType) {
+        flashStart(ProgressButton.STATE_FINISH, "开始还原 " + rootType);
+        PatchUtils.Result reslut = new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR,"错误类型");
+        switch (rootType) {
+            case "Magisk":
+                reslut = aRestoreUtils.restoreMagisk();
+                break;
+            case "KernelSU":
+                reslut = aRestoreUtils.restoreKernelSU();
+                break;
+            case "APatch":
+                reslut = aRestoreUtils.restoreAPatch();
+                break;
+        }
+        if (reslut.errorCode == PatchUtils.ErrorCode.SUCCESS) {
+            startUpdate();
+            return;
+        }
+        if (reslut.errorCode == PatchUtils.ErrorCode.EXEC_ERROR)
+            showPatchErrorDialog(reslut.errorMessage);
+        else
+            showRebootDialog("还原失败", reslut.errorMessage);
     }
 
     private void updateSuccess() {
@@ -458,9 +548,10 @@ public class MainActivity extends BaseActivity {
                         return 0;
                     }
                 })
+                .setCancelable(false)
                 .setOnMenuItemClickListener((dialog, text, index) -> {
                     dialog.dismiss();
-                    flashStart();
+                    flashStart(-1,null);
                     if (index == 2) {
                         getMainHandler().post(() -> InputDialogUtils.show(aContext, "设定超级密钥", "内核补丁的唯一密钥，密钥长度最少8位数，且最少含有一位字母", (dialog1, bindingiput, isCancel) -> {
                             if (isCancel) {
@@ -512,7 +603,7 @@ public class MainActivity extends BaseActivity {
         if (reslut.errorCode == PatchUtils.ErrorCode.SUCCESS)
             showRebootDialog("安装成功","安装到未使用卡槽完成");
         else if (reslut.errorCode == PatchUtils.ErrorCode.EXEC_ERROR)
-            showErrorDialog(reslut.errorMessage);
+            showPatchErrorDialog(reslut.errorMessage);
         else
             showRebootDialog("安装失败", reslut.errorMessage);
     }

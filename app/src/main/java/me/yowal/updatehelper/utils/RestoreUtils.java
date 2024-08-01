@@ -30,9 +30,16 @@ public class RestoreUtils {
 
     private final Shell aShell;
 
+    private String aBackupBoot;
+
+    private String aBackupDir;
+
     public RestoreUtils(Context context, String installDir) {
         this.aContext = context;
         this.aInstallDir = installDir;
+        if (!context.getCacheDir().exists())
+            context.getCacheDir().mkdirs();
+        this.aBackupDir = context.getCacheDir().getAbsolutePath();
         this.aFileSystemManager = SuFileManager.getInstance().getRemote();
         this.aShell = Shell.getShell();
     }
@@ -79,7 +86,8 @@ public class RestoreUtils {
         if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot)) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
         }
-
+        ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");
+        Shell.cmd("mv " + aInstallDir + "/boot.img " + aBackupDir + "/boot.img").exec();
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");
     }
 
@@ -111,7 +119,6 @@ public class RestoreUtils {
         LogUtils.d("restoreKernelSU", String.join("\n", stdout));
 
         String patch_img = ShellUtils.fastCmd("cd " + aInstallDir + " & ls kernelsu_*.img");
-        LogUtils.d("restoreKernelSU", patch_img);
 
         if (TextUtils.isEmpty(patch_img)) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "获取修补文件错误，请自行操作");
@@ -120,7 +127,8 @@ public class RestoreUtils {
         if (!FlashUtils.flash_image(aInstallDir + "/" + patch_img, srcBoot)) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
         }
-
+        ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");
+        Shell.cmd("mv " + aInstallDir + "/boot.img " + aBackupDir + "/boot.img").exec();
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");
     }
 
@@ -196,6 +204,18 @@ public class RestoreUtils {
         if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot)) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
         }
+
+        ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");
+        Shell.cmd("mv " + aInstallDir + "/boot.img " + aBackupDir + "/boot.img").exec();
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");
+    }
+
+    public void RestoreFlash() {
+        // 提取当前分区的boot镜像
+        String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + Config.currentSlot;
+        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+            srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
+        }
+        FlashUtils.flash_image(aBackupDir + "/boot.img", srcBoot);
     }
 }

@@ -127,6 +127,9 @@ public class MainActivity extends BaseActivity {
                 boolean hasDisplayid = !TextUtils.isEmpty(aUpdateInfo.getDisplayid());
                 aNotificationManager.notify(1, NotificationUtils.notifyMsg(aContext, hasDisplayid ? aUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
+                if (supportOta && aUpdateInfo.getType() == 1) {
+                    aRestoreUtils.RestoreFlash();
+                }
                 showDialog("更新失败!","哎呀，开了个小差，更新失败了，错误代号：" + error_code );
                 aNotificationManager.notify(1, NotificationUtils.notifyMsg(aContext,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了，错误代号：" + error_code));
             }

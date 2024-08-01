@@ -30,8 +30,6 @@ public class RestoreUtils {
 
     private final Shell aShell;
 
-    private String aBackupBoot;
-
     private String aBackupDir;
 
     public RestoreUtils(Context context, String installDir) {
@@ -216,6 +214,7 @@ public class RestoreUtils {
         if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
         }
-        FlashUtils.flash_image(aBackupDir + "/boot.img", srcBoot);
+
+        LogUtils.d("RestoreFlash", "backupBoot = " + aBackupDir + "/boot.img, flash = " + FlashUtils.flash_image(aBackupDir + "/boot.img", srcBoot));
     }
 }

@@ -80,8 +80,11 @@ public class RestoreUtils {
         if (!isSuccess) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
         }
+
+        LogUtils.d("restoreMagisk", String.join("\n", stdout));
+
         aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
-        if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot)) {
+        if (!FlashUtils.flash_image(aInstallDir + "/magisk_patch.img", srcBoot)) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
         }
         ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");

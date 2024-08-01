@@ -20,12 +20,16 @@ public class FlashUtils {
     public static boolean flash_image(String img, String block) {
         Shell.cmd("blockdev --setrw " + block).exec();
         try {
+            ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);
+            if (!bootBackup.exists()) {
+                LogUtils.e("flash_image", "img file no exists");
+                return false;
+            }
             ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(block);
             if (!bootBlock.exists()) {
                 LogUtils.e("flash_image", "block file no exists");
                 return false;
             }
-            ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);
             InputStream in = bootBackup.newInputStream();
             OutputStream out = bootBlock.newOutputStream();
             return IOUtils.copy(in, out) > 0;
@@ -44,7 +48,7 @@ public class FlashUtils {
         try {
             ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(block);
             if (!bootBlock.exists()) {
-                LogUtils.e("extract_image", "img file no exists");
+                LogUtils.e("extract_image", "block file no exists");
                 return false;
             }
             ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);

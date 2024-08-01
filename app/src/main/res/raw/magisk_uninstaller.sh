@@ -90,8 +90,8 @@ case $((STATUS & 3)) in
     BACKUPDIR=/data/magisk_backup_$SHA1
     if [ -d $BACKUPDIR ]; then
       ui_print "- Restoring stock boot image"
-      gzip -d $BACKUPDIR/boot.img.gz
-      mv boot.img new-boot.img
+      gzip -dk $BACKUPDIR/boot.img.gz
+      mv $BACKUPDIR/boot.img new-boot.img
       #flash_image $BACKUPDIR/boot.img.gz $FLASHIMAGE
     else
       ui_print "! Boot image backup unavailable"

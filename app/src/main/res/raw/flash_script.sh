@@ -24,3 +24,4 @@ flash_image() {
   fi
   return 0
 }
+

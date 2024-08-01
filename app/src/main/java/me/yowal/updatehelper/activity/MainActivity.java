@@ -196,6 +196,8 @@ public class MainActivity extends BaseActivity {
                     Shell.cmd("mkdir " + getFilesDir().toString()).exec();
                     FileUtils.copyToFile(getAssets().open("magiskboot"), new File(getFilesDir(),"magiskboot"));
                     FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch_patch), new File(getFilesDir(),"apatch_patch.sh"));
+                    FileUtils.copyToFile(getResources().openRawResource(R.raw.flash_script), new File(getFilesDir(),"flash_script.sh"));
+
                     Shell.cmd("chmod -R 777 " + getFilesDir().toString()).exec();
                 } catch (IOException e) {
                     LogUtils.e("CheckRoot", e.getLocalizedMessage());
@@ -421,36 +423,33 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showDialog(String title, CharSequence message) {
-        AlertDialog dialog = CreateMaterialAlertDialogBuilder()
+        getMainHandler().post(() -> CreateMaterialAlertDialogBuilder()
                 .setTitle(title)
                 .setCancelable(false)
                 .setMessage(message)
                 .setPositiveButton("知道了", null)
-                .create();
-        showDialog(dialog);
+                .create().show());
     }
 
     private void showPatchErrorDialog(String error) {
-        AlertDialog alertDialog = CreateMaterialAlertDialogBuilder()
+        getMainHandler().post(() -> CreateMaterialAlertDialogBuilder()
                 .setTitle("修补失败")
                 .setCancelable(false)
                 .setMessage("运行修补脚本失败，是否查看错误信息")
                 .setPositiveButton("重启", (dialog, which) -> Utils.reboot())
                 .setNegativeButton("查看", (dialog, which) -> showDialog("错误信息", error))
                 .setNeutralButton("取消",null)
-                .create();
-        showDialog(alertDialog);
+                .create().show());
     }
 
     private void showRebootDialog(String title,String message) {
-        AlertDialog alertDialog = CreateMaterialAlertDialogBuilder()
+        getMainHandler().post(() -> CreateMaterialAlertDialogBuilder()
                 .setTitle(title)
                 .setCancelable(false)
                 .setMessage(message)
                 .setPositiveButton("重启", (dialog, which) -> Utils.reboot())
                 .setNegativeButton("稍后重启", null)
-                .create();
-        showDialog(alertDialog);
+                .create().show());
     }
 
     private void readyUpdate(String File) {
@@ -478,7 +477,7 @@ public class MainActivity extends BaseActivity {
 
     private void shouldResoteBoot() {
         flashStart(ProgressButton.STATE_FINISH, "准备还原");
-        BottomMenu.show("还原提示", "检测到你选择的 ROM 包可能为增量包，需要还原镜像才能，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSU", "APatch"})
+        BottomMenu.show("还原提示", "检测到你选择的 ROM 包可能为增量包，需要还原镜像才能更新，如果需要，请在选项中选择当前 Root 环境。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSU", "APatch"})
                 .setOnIconChangeCallBack(new OnIconChangeCallBack<BottomMenu>(true) {
                     @Override
                     public int getIcon(BottomMenu bottomMenu, int index, String menuText) {
@@ -533,7 +532,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updateSuccess() {
-        BottomMenu.show("更新成功", "恭喜你看到我了，现在轮到你选择保留 Root 的方式了，如果需要，那就请在选项中选择一个吧。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSU", "APatch"})
+        BottomMenu.show("更新成功", "恭喜你看到我了，现在轮到你选择保留 Root 的方式了，如果需要，请在选项中选择当前 Root 环境。\n\n注意了：是选择里面的哦，不是点击按钮哦~", new String[]{"Magisk", "KernelSU", "APatch"})
                 .setOnIconChangeCallBack(new OnIconChangeCallBack<BottomMenu>(true) {
                     @Override
                     public int getIcon(BottomMenu bottomMenu, int index, String menuText) {

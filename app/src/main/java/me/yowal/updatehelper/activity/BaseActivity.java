@@ -45,10 +45,6 @@ public class BaseActivity extends AppCompatActivity {
     }
 
 
-    public void showDialog(AlertDialog dialog) {
-        mainHandler.post(dialog::show);
-    }
-
 
 
     public void toast(String message) {

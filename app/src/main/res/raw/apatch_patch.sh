@@ -29,19 +29,18 @@ SUPERKEY=$1
 BOOTIMAGE=$2
 shift 2
 
-[ -z "$SUPERKEY" ] && { echo "- SuperKey empty!"; exit 1; }
-[ -e "$BOOTIMAGE" ] || { echo "- $BOOTIMAGE does not exist!"; exit 1; }
+[ -z "$SUPERKEY" ] && { abort "- SuperKey empty!"; }
+[ -e "$BOOTIMAGE" ] || { abort "- $BOOTIMAGE does not exist!"; }
 
 # Check for dependencies
-command -v ./magiskboot >/dev/null 2>&1 || { echo "- Command magiskboot not found!"; exit 1; }
-command -v ./kptools >/dev/null 2>&1 || { echo "- Command kptools not found!"; exit 1; }
+command -v ./magiskboot >/dev/null 2>&1 || { abort "- Command magiskboot not found!"; }
+command -v ./kptools >/dev/null 2>&1 || { abort "- Command kptools not found!"; }
 
 if [ ! -f kernel ]; then
 echo "- Unpacking boot image"
 ./magiskboot unpack "$BOOTIMAGE" >/dev/null 2>&1
   if [ $? -ne 0 ]; then
-    echo "- Unpack error: $?"
-    exit $?
+    abort "- Unpack error: $?"
   fi
 fi
 
@@ -52,16 +51,14 @@ echo "- Patching kernel"
 ./kptools -p -i kernel.ori -s "$SUPERKEY" -k kpimg -o kernel "$@"
 
 if [ $? -ne 0 ]; then
-  echo "- Patch kernel error: $?"
-  exit $?
+  abort "- Patch kernel error: $?"
 fi
 
 echo "- Repacking boot image"
 ./magiskboot repack "$BOOTIMAGE" >/dev/null 2>&1
 
 if [ $? -ne 0 ]; then
-  echo "- Repack error: $?"
-  exit $?
+  abort "- Repack error: $?"
 fi
 
 echo "- Cleaning up"

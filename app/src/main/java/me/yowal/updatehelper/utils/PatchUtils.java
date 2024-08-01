@@ -203,7 +203,7 @@ public class PatchUtils {
 
         ShellUtils.fastCmd("chmod -R 777 " + aInstallDir);
 
-        String[] envList = new String[]{"kptools", "magiskboot", "kpimg", "kpatch"};
+        String[] envList = new String[]{"kptools", "magiskboot", "kpimg", "kpatch", "apatch_patch.sh"};
         for (String file: envList) {
             if (!new File(aInstallDir + "/" + file).exists()) {
                 return new Result(ErrorCode.EVEN_ERROR, file + " 文件不存在，请自行修补");

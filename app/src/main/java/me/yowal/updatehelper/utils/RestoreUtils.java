@@ -63,23 +63,28 @@ public class RestoreUtils {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
         }
 
-        // 保存的boot镜像
-        String workBoot = aInstallDir + "/" + FileUtils.getName(srcBoot);
-        FileUtils.delete(workBoot);
-        if (!FlashUtils.extract_image(srcBoot, workBoot)) {
+        FileUtils.delete(aInstallDir + "/boot.img");
+        FileUtils.delete(aInstallDir + "/magisk_patch.img");
+
+        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
         }
         List<String> stdout = new ArrayList<>();
         // 使用面具自带的脚本进行修补
         boolean isSuccess = aShell.newJob()
                 .add("cd /data/adb/magisk")
-                .add("sh magisk_uninstaller.sh " + workBoot)
+                .add("sh magisk_uninstaller.sh " + aInstallDir + "/boot.img")
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();
         if (!isSuccess) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
         }
+        aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
+        if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot)) {
+            return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
+        }
+
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");
     }
 
@@ -94,22 +99,30 @@ public class RestoreUtils {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
         }
 
-        // 保存的boot镜像
-        String workBoot = aInstallDir + "/" + FileUtils.getName(srcBoot);
-        FileUtils.delete(workBoot);
-        if (!FlashUtils.extract_image(srcBoot, workBoot)) {
+        ShellUtils.fastCmd("rm -r " + aInstallDir + "/*.img");
+        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
         }
         List<String> stdout = new ArrayList<>();
         boolean isSuccess = aShell.newJob()
                 .add("cd " + aInstallDir)
-                .add("/data/adb/ksud boot-restore -f --magiskboot " + aInstallDir +  "/magiskboot -b " + workBoot)
+                .add("/data/adb/ksud boot-restore --magiskboot " + aInstallDir +  "/magiskboot -b " + aInstallDir + "/boot.img")
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();
         if (!isSuccess) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
         }
+
+        String patch_img = ShellUtils.fastCmd("cd " + aInstallDir + " & ls kernelsu_*.img");
+        if (TextUtils.isEmpty(patch_img)) {
+            return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "获取修补文件错误，请自行操作");
+        }
+
+        if (!FlashUtils.flash_image(aInstallDir + "/" + patch_img, srcBoot)) {
+            return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
+        }
+
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");
     }
 
@@ -132,7 +145,7 @@ public class RestoreUtils {
             JSONObject jsonObject = new JSONObject(rep);
             lastTag = jsonObject.getString("tag_name");
         } catch (Exception e) {
-            LogUtils.e("patchAPatch", e.getLocalizedMessage());
+            LogUtils.e("restoreAPatch", e.getLocalizedMessage());
         }
 
         if (TextUtils.isEmpty(lastTag)) {
@@ -161,21 +174,29 @@ public class RestoreUtils {
             srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
         }
 
-        // 保存的boot镜像
-        String workBoot = aInstallDir + "/" + FileUtils.getName(srcBoot);
-        FileUtils.delete(workBoot);
-        if (!FlashUtils.extract_image(srcBoot, workBoot)) {
+        FileUtils.delete(aInstallDir + "/boot.img");
+        FileUtils.delete(aInstallDir + "/apatch_patch.img");
+
+        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
         }
+
         List<String> stdout = new ArrayList<>();
         boolean isSuccess = aShell.newJob()
                 .add("cd " + aInstallDir)
-                .add("sh apatch_unpatch.sh " + workBoot)
+                .add("sh apatch_unpatch.sh " + aInstallDir + "/boot.img")
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();
+        LogUtils.d("restoreAPatch", String.join("\n", stdout));
         if (!isSuccess) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
+        }
+
+        aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
+
+        if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot)) {
+            return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
         }
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");
     }

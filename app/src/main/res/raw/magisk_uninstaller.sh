@@ -34,8 +34,10 @@ if [ -z $SOURCEDMODE ]; then
 fi
 
 BOOTIMAGE="$1"
+FLASHIMAGE="$2"
 
 [ -e "$BOOTIMAGE" ] || abort "$BOOTIMAGE does not exist!"
+[ -e "$FLASHIMAGE" ] || abort "$FLASHIMAGE does not exist!"
 
 CHROMEOS=false
 
@@ -90,7 +92,9 @@ case $((STATUS & 3)) in
     BACKUPDIR=/data/magisk_backup_$SHA1
     if [ -d $BACKUPDIR ]; then
       ui_print "- Restoring stock boot image"
-      flash_image $BACKUPDIR/boot.img.gz $BOOTIMAGE
+      gzip -d $BACKUPDIR/boot.img.gz
+      mv boot.img new-boot.img
+      #flash_image $BACKUPDIR/boot.img.gz $FLASHIMAGE
     else
       ui_print "! Boot image backup unavailable"
       ui_print "- Restoring ramdisk with internal backup"
@@ -103,7 +107,7 @@ case $((STATUS & 3)) in
       # Sign chromeos boot
       $CHROMEOS && sign_chromeos
       ui_print "- Flashing restored boot image"
-      flash_image new-boot.img $BOOTIMAGE || abort "! Insufficient partition size"
+      #flash_image new-boot.img $FLASHIMAGE || abort "! Insufficient partition size"
     fi
     ;;
   2 )  # Unsupported

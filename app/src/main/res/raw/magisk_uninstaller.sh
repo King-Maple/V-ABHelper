@@ -34,10 +34,8 @@ if [ -z $SOURCEDMODE ]; then
 fi
 
 BOOTIMAGE="$1"
-FLASHIMAGE="$2"
 
 [ -e "$BOOTIMAGE" ] || abort "$BOOTIMAGE does not exist!"
-[ -e "$FLASHIMAGE" ] || abort "$FLASHIMAGE does not exist!"
 
 CHROMEOS=false
 

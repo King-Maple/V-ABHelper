@@ -46,12 +46,7 @@ public class RestoreUtils {
             }
         }
 
-        try {
-            FileUtils.copyToFile(aContext.getResources().openRawResource(R.raw.magisk_uninstaller), new File("/data/adb/magisk","magisk_uninstaller.sh"));
-            Shell.cmd("chmod 777 /data/adb/magisk").exec();
-        } catch (IOException e) {
-            LogUtils.e("restoreMagisk", e.getLocalizedMessage());
-        }
+        Shell.cmd("chmod 777 /data/adb/magisk/magisk_uninstaller.sh").exec();
 
         if (!aFileSystemManager.getFile("/data/adb/magisk/magisk_uninstaller.sh").exists()) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EVEN_ERROR, "卸载环境不全，请自行操作");
@@ -113,8 +108,11 @@ public class RestoreUtils {
         if (!isSuccess) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
         }
+        LogUtils.d("restoreKernelSU", String.join("\n", stdout));
 
         String patch_img = ShellUtils.fastCmd("cd " + aInstallDir + " & ls kernelsu_*.img");
+        LogUtils.d("restoreKernelSU", patch_img);
+
         if (TextUtils.isEmpty(patch_img)) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "获取修补文件错误，请自行操作");
         }

@@ -196,8 +196,8 @@ public class MainActivity extends BaseActivity {
                     Shell.cmd("mkdir " + getFilesDir().toString()).exec();
                     FileUtils.copyToFile(getAssets().open("magiskboot"), new File(getFilesDir(),"magiskboot"));
                     FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch_patch), new File(getFilesDir(),"apatch_patch.sh"));
-                    FileUtils.copyToFile(getResources().openRawResource(R.raw.flash_script), new File(getFilesDir(),"flash_script.sh"));
-
+                    FileUtils.copyToFile(getResources().openRawResource(R.raw.magisk_uninstaller), new File(getFilesDir(),"magisk_uninstaller.sh"));
+                    Shell.cmd("mv " + new File(getFilesDir(),"magisk_uninstaller.sh").getAbsolutePath() + " /data/adb/magisk/magisk_uninstaller.sh").exec();
                     Shell.cmd("chmod -R 777 " + getFilesDir().toString()).exec();
                 } catch (IOException e) {
                     LogUtils.e("CheckRoot", e.getLocalizedMessage());
@@ -207,6 +207,7 @@ public class MainActivity extends BaseActivity {
                 binding.buttonFlash.setVisibility(View.GONE);
                 binding.homeNoRoot.setVisibility(View.VISIBLE);
                 binding.infoRootType.setText(String.format("Root实现：%s", "None"));
+                binding.infoSupportOta.setText(String.format("OTA更新：%s", "None"));
             }
         });
 

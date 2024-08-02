@@ -28,5 +28,7 @@ interface IUpdateService {
 
     void passValidateSourceHash(String lib, int offset);
 
+    String GetAPKInstallPath(String pkg);
+
     boolean isOtaZip(in byte[] metadata_pb_data);
 }

@@ -98,4 +98,21 @@ public class Utils {
         }
         return byteArray;
     }
+
+    public static int findBytes(byte[] data, byte[] subData) {
+        if (subData == null || subData.length == 0) { return -1; }
+        if (data == null || data.length == 0) { return -1; }
+        for (int i = 0; i <= data.length - subData.length; i++) {
+            int j;
+            for (j = 0; j < subData.length; j++) {
+                if (data[i + j] != subData[j]) {
+                    break;
+                }
+            }
+            if (j == subData.length) {
+                return i;
+            }
+        }
+        return -1;
+    }
 }

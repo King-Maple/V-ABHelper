@@ -34,8 +34,9 @@ if [ -z $SOURCEDMODE ]; then
 fi
 
 BOOTIMAGE="$1"
-
+MAGISKBOOT=$2
 [ -e "$BOOTIMAGE" ] || abort "$BOOTIMAGE does not exist!"
+[ -e "$MAGISKBOOT" ] || abort "$MAGISKBOOT does not exist!"
 
 CHROMEOS=false
 
@@ -46,7 +47,7 @@ if [ -c $BOOTIMAGE ]; then
   BOOTNAND=$BOOTIMAGE
   BOOTIMAGE=boot.img
 fi
-./magiskboot unpack "$BOOTIMAGE"
+$MAGISKBOOT unpack "$BOOTIMAGE"
 
 case $? in
   0 ) ;;
@@ -66,9 +67,9 @@ esac
 [ "$BOOTNAND" ] && BOOTIMAGE=$BOOTNAND
 
 # Detect boot image state
-ui_print "- Checking ramdisk status"
+echo "- Checking ramdisk status"
 if [ -e ramdisk.cpio ]; then
-  ./magiskboot cpio ramdisk.cpio test
+  $MAGISKBOOT cpio ramdisk.cpio test
   STATUS=$?
 else
   # Stock A only system-as-root
@@ -81,7 +82,7 @@ case $((STATUS & 3)) in
   1 )  # Magisk patched
     ui_print "- Magisk patched image detected"
     # Find SHA1 of stock boot image
-    ./magiskboot cpio ramdisk.cpio "extract .backup/.magisk config.orig"
+    $MAGISKBOOT cpio ramdisk.cpio "extract .backup/.magisk config.orig"
     if [ -f config.orig ]; then
       chmod 0644 config.orig
       SHA1=$(grep_prop SHA1 config.orig)
@@ -96,12 +97,12 @@ case $((STATUS & 3)) in
     else
       ui_print "! Boot image backup unavailable"
       ui_print "- Restoring ramdisk with internal backup"
-      ./magiskboot cpio ramdisk.cpio restore
-      if ! ./magiskboot cpio ramdisk.cpio "exists init"; then
+      $MAGISKBOOT cpio ramdisk.cpio restore
+      if ! $MAGISKBOOT cpio ramdisk.cpio "exists init"; then
         # A only system-as-root
         rm -f ramdisk.cpio
       fi
-      ./magiskboot repack $BOOTIMAGE
+      $MAGISKBOOT repack $BOOTIMAGE
       # Sign chromeos boot
       $CHROMEOS && sign_chromeos
       ui_print "- Flashing restored boot image"

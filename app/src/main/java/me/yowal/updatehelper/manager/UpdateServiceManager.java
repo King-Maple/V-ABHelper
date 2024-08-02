@@ -130,4 +130,13 @@ public class UpdateServiceManager {
             return false;
         }
     }
+
+    public String GetAPKInstallPath(String pkg) {
+        try {
+            return this.uNativeService.GetAPKInstallPath(pkg);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
 }

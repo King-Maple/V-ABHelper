@@ -73,7 +73,7 @@ public class RestoreUtils {
         // 使用面具自带的脚本进行修补
         boolean isSuccess = aShell.newJob()
                 .add("cd /data/adb/magisk")
-                .add("sh magisk_uninstaller.sh " + aInstallDir + "/boot.img")
+                .add("sh magisk_uninstaller.sh " + aInstallDir + "/boot.img " + aInstallDir +  "/magiskboot")
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();

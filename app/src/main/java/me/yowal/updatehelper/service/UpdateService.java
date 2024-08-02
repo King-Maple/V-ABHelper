@@ -1,6 +1,7 @@
 package me.yowal.updatehelper.service;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
 import android.os.IBinder;
@@ -15,14 +16,19 @@ import com.topjohnwu.superuser.ipc.RootService;
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 import me.yowal.updatehelper.Natives;
 import me.yowal.updatehelper.bean.UpdateInfo;
 import me.yowal.updatehelper.interfaces.IUpdateCallback;
 import me.yowal.updatehelper.proxy.UpdateEngineProxy;
+import me.yowal.updatehelper.utils.IOUtils;
 import me.yowal.updatehelper.utils.LogUtils;
 import me.yowal.updatehelper.utils.UpdateUtils;
+import me.yowal.updatehelper.utils.Utils;
 
 public class UpdateService extends RootService {
     static {
@@ -32,13 +38,43 @@ public class UpdateService extends RootService {
 
     private static final String TAG = "UpdateService";
 
+    @Override
+    public void onCreate() {
+        /*try {
+            FileInputStream input = new FileInputStream("/sdcard/还原ramdisk.cpio");
+            byte [] cpio = IOUtils.toByteArray(input);
+            int tailIndex = Utils.findBytes(cpio, "TRAILER!!!".getBytes());
+            if (tailIndex > 0)
+                tailIndex += 10;
+            int padd = 512 - tailIndex % 512;
+            input.close();
+            RandomAccessFile randomAccessFile = new RandomAccessFile("/sdcard/还原ramdisk.cpio", "rw");
+            randomAccessFile.seek(tailIndex);
+            randomAccessFile.write(new byte[padd]);
+            randomAccessFile.close();
+            LogUtils.d("fixCpio", "tailIndex = " + tailIndex);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+
+    }
+
+    private String GetInstallPath(String pkg) {
+        try {
+            return getPackageManager().getApplicationInfo(pkg, 0).sourceDir;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "";
+        }
+    }
 
     @Override
     public IBinder onBind(@NonNull Intent intent) {
         return new UpdateServiceIPC();
     }
 
-    static class UpdateServiceIPC extends IUpdateService.Stub {
+    class UpdateServiceIPC extends IUpdateService.Stub {
         private final UpdateEngineProxy mUpdateEngine = new UpdateEngineProxy();
         private AssetFileDescriptor mAssetFileDescriptor;
 
@@ -150,6 +186,11 @@ public class UpdateService extends RootService {
         @Override
         public void passValidateSourceHash(String lib, int offset)  {
             Natives.passValidateSourceHash(lib, offset);
+        }
+
+        @Override
+        public String GetAPKInstallPath(String pkg) {
+            return GetInstallPath(pkg);
         }
 
         @Override

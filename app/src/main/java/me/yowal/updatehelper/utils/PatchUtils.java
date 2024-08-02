@@ -28,6 +28,8 @@ public class PatchUtils {
 
     private final String aInstallDir;
 
+    private final String aApatchManagerDir;
+
     private final FileSystemManager aFileSystemManager;
 
     private final Shell aShell;
@@ -37,6 +39,7 @@ public class PatchUtils {
         this.aInstallDir = installDir;
         this.aFileSystemManager = SuFileManager.getInstance().getRemote();
         this.aShell = Shell.getShell();
+        this.aApatchManagerDir = UpdateServiceManager.getInstance().GetAPKInstallPath("me.bmax.apatch");
     }
 
     public Result patchMagisk() {

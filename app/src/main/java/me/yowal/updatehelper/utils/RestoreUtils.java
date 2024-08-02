@@ -26,6 +26,8 @@ public class RestoreUtils {
 
     private final String aInstallDir;
 
+    private final String aApatchManagerDir;
+
     private final FileSystemManager aFileSystemManager;
 
     private final Shell aShell;
@@ -40,6 +42,7 @@ public class RestoreUtils {
         this.aBackupDir = context.getCacheDir().getAbsolutePath();
         this.aFileSystemManager = SuFileManager.getInstance().getRemote();
         this.aShell = Shell.getShell();
+        this.aApatchManagerDir = UpdateServiceManager.getInstance().GetAPKInstallPath("me.bmax.apatch");
     }
 
 
@@ -107,6 +110,9 @@ public class RestoreUtils {
         if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
         }
+
+        ShellUtils.fastCmd("cp -f " + aInstallDir + "/magiskboot /data/adb/ksu/magiskboot");
+        ShellUtils.fastCmd("chmod 755 /data/adb/ksu/magiskboot");
         List<String> stdout = new ArrayList<>();
         boolean isSuccess = aShell.newJob()
                 .add("cd " + aInstallDir)

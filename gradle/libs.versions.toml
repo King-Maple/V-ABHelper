@@ -10,7 +10,6 @@ material = "1.12.0"
 constraintlayout = "2.1.4"
 libsuVersion = "6.0.0"
 dialogXVersion = "0.0.50.beta17.1"
-okhttps = "3.5.3"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -28,9 +27,6 @@ dialogX = { module = "com.github.kongzue.DialogX:DialogX", version.ref = "dialog
 filedialog = { module = "com.github.kongzue.DialogXSample:FileDialog", version.ref = "filedialog" }
 
 immersionbar = { module = "com.geyifeng.immersionbar:immersionbar", version.ref = "immersionbar" }
-
-okhttps = { module = "com.ejlchina:okhttps", version.ref = "okhttps" }
-
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

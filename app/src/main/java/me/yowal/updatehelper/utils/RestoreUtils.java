@@ -4,12 +4,9 @@ import android.content.Context;
 import android.os.Build;
 import android.text.TextUtils;
 
-import com.ejlchina.okhttps.OkHttps;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.nio.FileSystemManager;
-
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;

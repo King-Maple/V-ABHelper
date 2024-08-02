@@ -27,7 +27,6 @@ import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
-import com.ejlchina.okhttps.OkHttps;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.kongzue.dialogx.dialogs.BottomDialog;
 import com.kongzue.dialogx.dialogs.BottomMenu;

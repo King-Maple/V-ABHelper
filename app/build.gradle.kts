@@ -70,9 +70,6 @@ dependencies {
 
     implementation(libs.immersionbar)
 
-
-    implementation(libs.okhttps)
-
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

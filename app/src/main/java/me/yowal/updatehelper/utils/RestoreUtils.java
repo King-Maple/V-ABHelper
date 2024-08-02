@@ -142,12 +142,7 @@ public class RestoreUtils {
         if (TextUtils.isEmpty(aApatchManagerDir))
             return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "APatch 获取失败，请自行操作");
 
-        try {
-            FileUtils.copyToFile(aContext.getResources().openRawResource(R.raw.apatch_unpatch), new File(aInstallDir,"apatch_unpatch.sh"));
-        } catch (IOException e) {
-            LogUtils.e("restoreAPatch", e.getLocalizedMessage());
-        }
-
+        AssetsUtils.writeFile(aContext, R.raw.apatch_unpatch, new File(aInstallDir,"apatch_unpatch.sh"));
 
         FileUtils.delete(aInstallDir + "/kptools");
         if (!Utils.unLibrary(aApatchManagerDir, "lib/arm64-v8a/libkptools.so", aInstallDir + "/kptools"))

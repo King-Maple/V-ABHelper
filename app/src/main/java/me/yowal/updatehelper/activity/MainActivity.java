@@ -60,6 +60,7 @@ import me.yowal.updatehelper.manager.UpdateServiceManager;
 import me.yowal.updatehelper.proxy.UpdateEngineProxy;
 import me.yowal.updatehelper.service.IUpdateService;
 import me.yowal.updatehelper.service.UpdateService;
+import me.yowal.updatehelper.utils.AssetsUtils;
 import me.yowal.updatehelper.utils.FileDialogUtils;
 import me.yowal.updatehelper.utils.FileUtils;
 import me.yowal.updatehelper.utils.FlashUtils;
@@ -193,17 +194,16 @@ public class MainActivity extends BaseActivity {
             if (shell.isRoot()) {
                 binding.homeNoRoot.setVisibility(View.GONE);
                 binding.buttonFlash.setVisibility(View.VISIBLE);
-                try {
-                    Shell.cmd("rm -r " + getFilesDir().toString()).exec();
-                    Shell.cmd("mkdir " + getFilesDir().toString()).exec();
-                    FileUtils.copyToFile(getAssets().open("magiskboot"), new File(getFilesDir(),"magiskboot"));
-                    FileUtils.copyToFile(getResources().openRawResource(R.raw.apatch_patch), new File(getFilesDir(),"apatch_patch.sh"));
-                    FileUtils.copyToFile(getResources().openRawResource(R.raw.magisk_uninstaller), new File(getFilesDir(),"magisk_uninstaller.sh"));
-                    Shell.cmd("mv " + new File(getFilesDir(),"magisk_uninstaller.sh").getAbsolutePath() + " /data/adb/magisk/magisk_uninstaller.sh").exec();
-                    Shell.cmd("chmod -R 777 " + getFilesDir().toString()).exec();
-                } catch (IOException e) {
-                    LogUtils.e("CheckRoot", e.getLocalizedMessage());
-                }
+                Shell.cmd("rm -r " + getFilesDir().toString()).exec();
+                Shell.cmd("mkdir " + getFilesDir().toString()).exec();
+                AssetsUtils.writeFile(aContext, "magiskboot", new File(getFilesDir(), "magiskboot"));
+                AssetsUtils.writeFile(aContext, R.raw.apatch_patch, new File(getFilesDir(),"apatch_patch.sh"));
+                AssetsUtils.writeFile(aContext, R.raw.magisk_uninstaller, new File(getFilesDir(),"magisk_uninstaller.sh"));
+
+                Shell.cmd("mv " + new File(getFilesDir(),"magisk_uninstaller.sh").getAbsolutePath() + " /data/adb/magisk/magisk_uninstaller.sh").exec();
+
+                Shell.cmd("chmod -R 777 " + getFilesDir().toString()).exec();
+
                 bindRootService();
             } else {
                 binding.buttonFlash.setVisibility(View.GONE);

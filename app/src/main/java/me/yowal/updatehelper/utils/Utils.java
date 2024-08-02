@@ -148,15 +148,13 @@ public class Utils {
                     break;
                 }
             }
-            //刷新缓存区
-            fos.flush();
             return result;
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            IOUtils.Close(fos);
-            IOUtils.Close(in_zip);
-            IOUtils.Close(zin_zip);
+            IOUtils.close(fos);
+            IOUtils.close(in_zip);
+            IOUtils.close(zin_zip);
         }
         return false;
     }

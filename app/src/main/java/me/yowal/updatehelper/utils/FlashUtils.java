@@ -18,6 +18,8 @@ public class FlashUtils {
 
     //刷入镜像
     public static boolean flash_image(String img, String block) {
+        InputStream in = null;
+        OutputStream out = null;
         Shell.cmd("blockdev --setrw " + block).exec();
         try {
             ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);
@@ -30,12 +32,15 @@ public class FlashUtils {
                 LogUtils.e("flash_image", "block file no exists");
                 return false;
             }
-            InputStream in = bootBackup.newInputStream();
-            OutputStream out = bootBlock.newOutputStream();
+            in = bootBackup.newInputStream();
+            out = bootBlock.newOutputStream();
             return IOUtils.copy(in, out) > 0;
         } catch (IOException e) {
             LogUtils.e("flash_image", e.getLocalizedMessage());
             return false;
+        } finally {
+            IOUtils.close(in);
+            IOUtils.close(out);
         }
     }
 
@@ -45,6 +50,8 @@ public class FlashUtils {
      * @return 提取状态
      */
     public static boolean extract_image(String block, String img) {
+        InputStream in = null;
+        OutputStream out = null;
         try {
             ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(block);
             if (!bootBlock.exists()) {
@@ -52,12 +59,15 @@ public class FlashUtils {
                 return false;
             }
             ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);
-            InputStream in = bootBlock.newInputStream();
-            OutputStream out = bootBackup.newOutputStream();
+            in = bootBlock.newInputStream();
+            out = bootBackup.newOutputStream();
             return IOUtils.copy(in, out) > 0;
         } catch (IOException e) {
             LogUtils.e("extract_image", e.getLocalizedMessage());
             return false;
+        } finally {
+            IOUtils.close(in);
+            IOUtils.close(out);
         }
     }
 
@@ -71,6 +81,7 @@ public class FlashUtils {
     public static boolean modifyPrivate(String installDir) {
         if (!Config.flymemodel.equals("M2391") && !Config.flymemodel.equals("M2381"))
             return true;
+        RandomAccessFile randomAccessFile = null;
         try {
             LogUtils.i("modifyPrivate", "modifyPrivate start");
             String srcImage = "/dev/block/bootdevice/by-name/private";
@@ -80,7 +91,7 @@ public class FlashUtils {
                 return false;
             }
             ShellUtils.fastCmd("chmod 777 " + installDir + "/private.img");
-            RandomAccessFile randomAccessFile = new RandomAccessFile(installDir + "/private.img", "rw");
+            randomAccessFile = new RandomAccessFile(installDir + "/private.img", "rw");
             int keySize = 0x14120 - 0x14000;
             byte[] bootlodaerKey = new byte[keySize];
             randomAccessFile.seek(0x14000);
@@ -95,11 +106,12 @@ public class FlashUtils {
             LogUtils.i("modifyPrivate", "set mTest Flags");
             randomAccessFile.seek(0x11105);
             randomAccessFile.write(bootloaderFlags);//设置 mTest 标识，主要是这个
-            randomAccessFile.close();
             return flash_image(installDir + "/private.img", srcImage);
         } catch (IOException e) {
             Log.e("modifyPrivate", e.getLocalizedMessage());
             return false;
+        } finally {
+            IOUtils.close(randomAccessFile);
         }
     }
 

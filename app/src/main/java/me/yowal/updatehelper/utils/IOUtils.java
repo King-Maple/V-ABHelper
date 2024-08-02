@@ -69,11 +69,8 @@ public class IOUtils {
         return count;
     }
 
-    public static String toString(final InputStream input) throws IOException {
-        return new BufferedReader(new InputStreamReader(input)).lines().collect(Collectors.joining("\n"));
-    }
 
-    public static void Close(Closeable in) {
+    public static void close(Closeable in) {
         if (in == null)
             return;
         try {

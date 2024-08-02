@@ -49,13 +49,8 @@ public class PatchUtils {
             }
         }
 
-        try {
-            ExtendedFile stub = aFileSystemManager.getFile("/data/adb/magisk/stub.apk");
-            if (!stub.exists()) {
-                OutputStream out = stub.newOutputStream();
-                IOUtils.copy(aContext.getAssets().open("stub.apk"), out);
-            }
-        } catch (IOException e) {
+        ExtendedFile stub = aFileSystemManager.getFile("/data/adb/magisk/stub.apk");
+        if (!stub.exists() && AssetsUtils.writeFile(aContext, "stub.apk", stub)) {
             return new Result(ErrorCode.EVEN_ERROR, "面具环境不全，请自行操作");
         }
 

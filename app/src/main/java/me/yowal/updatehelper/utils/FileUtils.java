@@ -77,12 +77,13 @@ public class FileUtils {
     }
 
     public static String getFileMD5(String file) {
+        InputStream in = null;
         try {
             byte[] buffer = new byte[1024];
             int len;
             MessageDigest digest = MessageDigest.getInstance("MD5");
             ExtendedFile extendedFile  = SuFileManager.getInstance().getRemote().getFile(file);
-            InputStream in = extendedFile.newInputStream();
+            in = extendedFile.newInputStream();
             while ((len = in.read(buffer, 0, 1024)) != -1) {
                 digest.update(buffer, 0, len);
             }
@@ -91,6 +92,8 @@ public class FileUtils {
         } catch (Exception e) {
             e.printStackTrace();
             return "";
+        } finally {
+            IOUtils.close(in);
         }
 
     }

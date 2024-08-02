@@ -111,8 +111,8 @@ public class RestoreUtils {
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
         }
 
-        ShellUtils.fastCmd("cp -f " + aInstallDir + "/magiskboot /data/adb/ksu/magiskboot");
-        ShellUtils.fastCmd("chmod 755 /data/adb/ksu/magiskboot");
+        ShellUtils.fastCmd("cp -f " + aInstallDir + "/magiskboot /data/adb/ksu/bin/magiskboot");
+        ShellUtils.fastCmd("chmod 755 /data/adb/ksu/bin/magiskboot");
         List<String> stdout = new ArrayList<>();
         boolean isSuccess = aShell.newJob()
                 .add("cd " + aInstallDir)

@@ -92,6 +92,7 @@ public class RestoreUtils {
         }
         ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");
         Shell.cmd("mv " + aInstallDir + "/boot.img " + aBackupDir + "/boot.img").exec();
+
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");
     }
 
@@ -141,36 +142,19 @@ public class RestoreUtils {
 
 
     public PatchUtils.Result restoreAPatch() {
+        if (TextUtils.isEmpty(aApatchManagerDir))
+            return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "APatch 获取失败，请自行操作");
+
         try {
             FileUtils.copyToFile(aContext.getResources().openRawResource(R.raw.apatch_unpatch), new File(aInstallDir,"apatch_unpatch.sh"));
         } catch (IOException e) {
             LogUtils.e("restoreAPatch", e.getLocalizedMessage());
         }
 
-        // 这里使用 Github 接口，获取 releases 最新版本号
-        String rep = OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/latest.json")
-                .get()
-                .getBody().toString();
-
-
-        String lastTag = "";
-        try {
-            JSONObject jsonObject = new JSONObject(rep);
-            lastTag = jsonObject.getString("tag_name");
-        } catch (Exception e) {
-            LogUtils.e("restoreAPatch", e.getLocalizedMessage());
-        }
-
-        if (TextUtils.isEmpty(lastTag)) {
-            return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "APatch 版本获取失败，请自行操作");
-        }
 
         FileUtils.delete(aInstallDir + "/kptools");
-        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kptools")
-                .get()
-                .getBody()
-                .toFile(aInstallDir + "/kptools")
-                .start();
+        if (!Utils.unLibrary(aApatchManagerDir, "lib/arm64-v8a/libkptools.so", aInstallDir + "/kptools"))
+            return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "kptools 解压失败，请自行操作");
 
         ShellUtils.fastCmd("chmod -R 777 " + aInstallDir);
 

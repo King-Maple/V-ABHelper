@@ -8,6 +8,17 @@ import android.text.TextUtils;
 
 import com.topjohnwu.superuser.ShellUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 public class Utils {
 
     public static void openUrl(Context context, String url) {
@@ -115,4 +126,35 @@ public class Utils {
         }
         return -1;
     }
+
+
+    //解压lib
+    public static boolean unLibrary(String apkPath, String soName, String outPath) {
+        try {
+            boolean result = false;
+            FileOutputStream fos = new FileOutputStream(outPath);
+            FileInputStream in_zip = new FileInputStream(apkPath);
+            ZipInputStream zin_zip = new ZipInputStream(in_zip);
+            ZipEntry entry;
+            //开始遍历zip文件
+            while ((entry = zin_zip.getNextEntry()) != null) {
+                //判断是否是某文件
+                String zipFileName = entry.getName();
+                if (zipFileName.equals(soName)) {
+                    result = IOUtils.copy(zin_zip, fos) > 0;
+                    break;
+                }
+            }
+            //刷新缓存区
+            fos.flush();
+            fos.close();
+            in_zip.close();
+            zin_zip.close();
+            return result;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }

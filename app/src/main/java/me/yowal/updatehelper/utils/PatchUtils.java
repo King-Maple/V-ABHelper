@@ -163,46 +163,17 @@ public class PatchUtils {
 
     public Result patchAPatch(String SuperKey) {
 
-        // 这里使用 Github 接口，获取 releases 最新版本号
-        String rep = OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/latest.json")
-                .get()
-                .getBody().toString();
-
-
-        String lastTag = "";
-        try {
-            JSONObject jsonObject = new JSONObject(rep);
-            lastTag = jsonObject.getString("tag_name");
-        } catch (Exception e) {
-            LogUtils.e("patchAPatch", e.getLocalizedMessage());
-        }
-
-        if (TextUtils.isEmpty(lastTag)) {
-            return new Result(ErrorCode.OTHER_ERROR, "APatch 版本获取失败，请自行操作");
-        }
+        if (TextUtils.isEmpty(aApatchManagerDir))
+            return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "APatch 获取失败，请自行操作");
 
         FileUtils.delete(aInstallDir + "/kpimg");
-
-        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kpimg")
-                .get()
-                .getBody()
-                .toFile(aInstallDir + "/kpimg")
-                .start();
+        Utils.unLibrary(aApatchManagerDir, "assets/kpimg", aInstallDir + "/kpimg");
 
         FileUtils.delete(aInstallDir + "/kptools");
-
-        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kptools")
-                .get()
-                .getBody()
-                .toFile(aInstallDir + "/kptools")
-                .start();
+        Utils.unLibrary(aApatchManagerDir, "lib/arm64-v8a/libkptools.so", aInstallDir + "/kptools");
 
         FileUtils.delete(aInstallDir + "/kpatch");
-        OkHttps.sync("http://kpatch.oss-cn-shenzhen.aliyuncs.com/" + lastTag + "/kpatch")
-                .get()
-                .getBody()
-                .toFile(aInstallDir + "/kpatch")
-                .start();
+        Utils.unLibrary(aApatchManagerDir, "lib/arm64-v8a/libkpatch.so", aInstallDir + "/kpatch");
 
         ShellUtils.fastCmd("chmod -R 777 " + aInstallDir);
 

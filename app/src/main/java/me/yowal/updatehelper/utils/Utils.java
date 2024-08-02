@@ -130,11 +130,14 @@ public class Utils {
 
     //解压lib
     public static boolean unLibrary(String apkPath, String soName, String outPath) {
+        FileOutputStream fos = null;
+        FileInputStream in_zip= null;
+        ZipInputStream zin_zip= null;
         try {
             boolean result = false;
-            FileOutputStream fos = new FileOutputStream(outPath);
-            FileInputStream in_zip = new FileInputStream(apkPath);
-            ZipInputStream zin_zip = new ZipInputStream(in_zip);
+            fos = new FileOutputStream(outPath);
+            in_zip = new FileInputStream(apkPath);
+            zin_zip = new ZipInputStream(in_zip);
             ZipEntry entry;
             //开始遍历zip文件
             while ((entry = zin_zip.getNextEntry()) != null) {
@@ -147,12 +150,13 @@ public class Utils {
             }
             //刷新缓存区
             fos.flush();
-            fos.close();
-            in_zip.close();
-            zin_zip.close();
             return result;
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            IOUtils.Close(fos);
+            IOUtils.Close(in_zip);
+            IOUtils.Close(zin_zip);
         }
         return false;
     }

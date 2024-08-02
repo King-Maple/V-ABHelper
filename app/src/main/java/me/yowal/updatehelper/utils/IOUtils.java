@@ -2,6 +2,7 @@ package me.yowal.updatehelper.utils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,5 +73,14 @@ public class IOUtils {
         return new BufferedReader(new InputStreamReader(input)).lines().collect(Collectors.joining("\n"));
     }
 
+    public static void Close(Closeable in) {
+        if (in == null)
+            return;
+        try {
+            in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }

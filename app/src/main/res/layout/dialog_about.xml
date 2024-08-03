@@ -16,31 +16,6 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
-    <androidx.appcompat.widget.LinearLayoutCompat
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:gravity="center"
-        android:orientation="vertical">
-
-        <androidx.appcompat.widget.AppCompatImageView
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:src="@mipmap/ic_launcher" />
-
-        <androidx.appcompat.widget.AppCompatTextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:alpha="0.8"
-            android:id="@+id/about_app_name"
-            android:text="@string/app_name"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-    </androidx.appcompat.widget.LinearLayoutCompat>
-
     <me.yowal.updatehelper.widget.IOSOverScrollView
         android:scrollbars="none"
         android:layout_width="match_parent"
@@ -50,6 +25,30 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:src="@mipmap/ic_launcher" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:alpha="0.8"
+                    android:id="@+id/about_app_name"
+                    android:text="@string/app_name"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/about_blog"

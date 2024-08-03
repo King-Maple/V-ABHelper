@@ -233,6 +233,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
+                        android:alpha="0.6"
                         android:gravity="center_vertical"
                         android:text="@string/string_about_email_des"
                         android:textColor="?attr/colorPrimary"
@@ -300,6 +301,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
+                        android:alpha="0.6"
                         android:gravity="center_vertical"
                         android:text="这里感谢大佬对魅族的贡献"
                         android:textColor="?attr/colorPrimary"
@@ -356,6 +358,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
+                        android:alpha="0.6"
                         android:gravity="center_vertical"
                         android:text="提供刷写镜像思路"
                         android:textColor="?attr/colorPrimary"
@@ -414,6 +417,7 @@
                         android:layout_weight="1"
                         android:gravity="center_vertical"
                         android:text="给APatch适配做出测试"
+                        android:alpha="0.6"
                         android:textColor="?attr/colorPrimary"
                         android:textSize="12sp" />
 
@@ -469,6 +473,7 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:gravity="center_vertical"
+                        android:alpha="0.6"
                         android:text="没有他的 一叶孤舟 也就没有我们的更新助手"
                         android:textColor="?attr/colorPrimary"
                         android:textSize="12sp" />

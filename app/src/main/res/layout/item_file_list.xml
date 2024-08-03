@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:visibility="gone"
             tools:text="2024年1月1日 23:33"
-            android:alpha="0.8"
+            android:alpha="0.6"
             android:textColor="?attr/colorPrimary"
             android:textSize="12sp" />
     </androidx.appcompat.widget.LinearLayoutCompat>

@@ -14,6 +14,7 @@ public class myApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        DialogX.globalTheme = DialogX.THEME.AUTO;
         DialogX.init(this);
         Config.init();
         CrashHandlerUtil.getInstance().init(this, LogActivity.class);

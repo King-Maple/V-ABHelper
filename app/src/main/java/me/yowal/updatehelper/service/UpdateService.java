@@ -115,7 +115,7 @@ public class UpdateService extends RootService {
                 });
                 if (!bind_status)
                     return false;
-                mUpdateEngine.resetStatus();
+                //mUpdateEngine.resetStatus();
                 if (info.getUrl().startsWith("file:///data/ota_package")) {
                     mUpdateEngine.applyPayload(info.getUrl(), info.getOffset(), info.getSize(), info.getHeaderKeyValuePairs());
                     return true;

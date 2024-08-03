@@ -149,10 +149,12 @@ public class PatchUtils {
             return new Result(ErrorCode.OTHER_ERROR, "校验值获取错误，请自行操作");
         LogUtils.d("patchKernelSU", sha1);
 
+        stdout.clear();
         isSuccess = aShell.newJob()
                 .add("cd " + aInstallDir)
                 .add("./magiskboot cleanup")
                 .add("./magiskboot unpack " + patch_img)
+                .to(stdout, stdout)
                 .exec()
                 .isSuccess();
         if (!isSuccess)
@@ -163,10 +165,12 @@ public class PatchUtils {
         Shell.cmd("mv " + aInstallDir + "/boot.img " + backupFile).exec();
         Shell.cmd("echo " + sha1 + " > " + aInstallDir + "/stock_image.sha1").exec();
 
+        stdout.clear();
         isSuccess = aShell.newJob()
                 .add("cd " + aInstallDir)
                 .add("./magiskboot cpio ramdisk.cpio 'add 0755 stock_image.sha1 stock_image.sha1'")
                 .add("./magiskboot repack " + patch_img)
+                .to(stdout, stdout)
                 .exec()
                 .isSuccess();
         if (!isSuccess)

@@ -323,6 +323,8 @@ public class MainActivity extends BaseActivity {
         binding.infoSystemModel.setText(String.format("设备型号：%s", Build.MODEL));
         binding.infoAndroidVersion.setText(String.format("Android版本：Android %s (%s)", Build.VERSION.RELEASE,Build.VERSION.SDK_INT));
         binding.infoRootType.setText(String.format("Root实现：%s", "获取中..."));
+
+        binding.infoSupportOta.setText(String.format("OTA更新：%s", "获取中..."));
         if (Config.isVab)
             binding.infoActionSolt.setText(String.format("活动分区：%s", Config.currentSlot.replaceAll("_","").toUpperCase(Locale.ROOT)));
         else
@@ -356,7 +358,7 @@ public class MainActivity extends BaseActivity {
         if (ksuVersion > 0)
             binding.infoRootType.setText(String.format("Root实现：%s (%s)", "KernelSU", ksuVersion));
         else if (!TextUtils.isEmpty(magiskVersion))
-            binding.infoRootType.setText(String.format("Root实现：%s (%s)", "Magsik", magiskVersion));
+            binding.infoRootType.setText(String.format("Root实现：%s (%s)", "Magisk", magiskVersion));
         else if (!TextUtils.isEmpty(apatchVersion))
             binding.infoRootType.setText(String.format("Root实现：%s (%s)", "APatch", apatchVersion));
         else

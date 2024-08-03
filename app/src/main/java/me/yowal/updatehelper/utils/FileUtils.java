@@ -87,7 +87,26 @@ public class FileUtils {
             while ((len = in.read(buffer, 0, 1024)) != -1) {
                 digest.update(buffer, 0, len);
             }
-            in.close();
+            return Utils.bytesToHex(digest.digest());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        } finally {
+            IOUtils.close(in);
+        }
+    }
+
+    public static String getFileSHA1(String file) {
+        InputStream in = null;
+        try {
+            byte[] buffer = new byte[1024];
+            int len;
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            ExtendedFile extendedFile  = SuFileManager.getInstance().getRemote().getFile(file);
+            in = extendedFile.newInputStream();
+            while ((len = in.read(buffer, 0, 1024)) != -1) {
+                digest.update(buffer, 0, len);
+            }
             return Utils.bytesToHex(digest.digest());
         } catch (Exception e) {
             e.printStackTrace();

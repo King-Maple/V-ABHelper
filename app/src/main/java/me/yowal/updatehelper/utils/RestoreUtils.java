@@ -83,7 +83,7 @@ public class RestoreUtils {
 
         LogUtils.d("restoreMagisk", String.join("\n", stdout));
 
-        aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/magisk_patch.img", "rm ./stock_boot.img", "cd /").exec();
+        aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/magisk_patch.img", "rm ./stock_boot.img").exec();
         if (!FlashUtils.flash_image(aInstallDir + "/magisk_patch.img", srcBoot)) {
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
         }
@@ -166,9 +166,8 @@ public class RestoreUtils {
         FileUtils.delete(aInstallDir + "/boot.img");
         FileUtils.delete(aInstallDir + "/apatch_patch.img");
 
-        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
+        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img"))
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
-        }
 
         List<String> stdout = new ArrayList<>();
         boolean isSuccess = aShell.newJob()
@@ -178,15 +177,13 @@ public class RestoreUtils {
                 .exec()
                 .isSuccess();
         LogUtils.d("restoreAPatch", String.join("\n", stdout));
-        if (!isSuccess) {
+        if (!isSuccess)
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
-        }
 
-        aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/apatch_patch.img", "rm ./stock_boot.img", "cd /").exec();
+        aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/apatch_patch.img", "rm ./stock_boot.img").exec();
 
-        if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot)) {
+        if (!FlashUtils.flash_image(aInstallDir + "/apatch_patch.img", srcBoot))
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
-        }
 
         ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");
         Shell.cmd("mv " + aInstallDir + "/boot.img " + aBackupDir + "/boot.img").exec();
@@ -196,10 +193,8 @@ public class RestoreUtils {
     public void RestoreFlash() {
         // 提取当前分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + Config.currentSlot;
-        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110"))
             srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
-        }
-
         LogUtils.d("RestoreFlash", "backupBoot = " + aBackupDir + "/boot.img, flash = " + FlashUtils.flash_image(aBackupDir + "/boot.img", srcBoot));
     }
 }

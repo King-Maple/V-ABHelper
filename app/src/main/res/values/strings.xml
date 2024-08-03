@@ -13,7 +13,9 @@
 		<br>
 		3. 如果出现卡进度的情况(一般是挂后台出现)，可以直接结束应用，重新选择相同的ROM更新即可(进度不会重置)；
 		<br>
-		4. 如果提示更新失败，请重启手机并等候一段时间再进行刷写操作]]></string>
+		4. 增量包更新的出现错误码20，需要首次在助手里使用全量包进行更新，这样后续就能使用增量包了(部分设备)
+		<br>
+		5. 如果提示更新失败，请重启手机并等候一段时间再进行刷写操作]]></string>
     <string name="string_home_flash">选择文件更新</string>
     <string name="string_no_root">获取root失败!</string>
     <string name="string_a_only">A-Only</string>

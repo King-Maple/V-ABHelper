@@ -19,6 +19,13 @@ getdir() {
   esac
 }
 
+get_config() {
+  local REGEX="s/^$1=//p"
+  shift
+  local FILES=$@
+  [ -z "$FILES" ] && FILES='/system/build.prop'
+  cat $FILES 2>/dev/null | dos2unix | sed -n "$REGEX" | head -n 1
+}
 
 ############
 # Uninstall
@@ -85,9 +92,10 @@ case $((STATUS & 3)) in
     $MAGISKBOOT cpio ramdisk.cpio "extract .backup/.magisk config.orig"
     if [ -f config.orig ]; then
       chmod 0644 config.orig
-      SHA1=$(grep_prop SHA1 config.orig)
+      SHA1=$(get_config SHA1 config.orig)
       rm config.orig
     fi
+    ui_print "- SHA1 = $SHA1"
     BACKUPDIR=/data/magisk_backup_$SHA1
     if [ -d $BACKUPDIR ]; then
       ui_print "- Restoring stock boot image"

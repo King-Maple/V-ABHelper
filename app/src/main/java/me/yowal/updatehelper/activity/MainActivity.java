@@ -202,8 +202,10 @@ public class MainActivity extends BaseActivity {
 
                 Shell.cmd("mv " + new File(getFilesDir(),"magisk_uninstaller.sh").getAbsolutePath() + " /data/adb/magisk/magisk_uninstaller.sh").exec();
 
-                Shell.cmd("chmod -R 777 " + getFilesDir().toString()).exec();
+                Shell.cmd("chmod -R 777 " + getFilesDir().getAbsolutePath()).exec();
 
+                //int test = shell.newJob().add(getFilesDir() + "/magiskboot cpio /sdcard/ramdisk.cpio test").exec().getCode();
+                //LogUtils.d("ramdisk.cpio", test + "");
                 bindRootService();
             } else {
                 binding.buttonFlash.setVisibility(View.GONE);

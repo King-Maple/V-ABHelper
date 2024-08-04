@@ -59,16 +59,15 @@ public class RestoreUtils {
 
         // 提取当前分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + Config.currentSlot;
-        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110"))
             srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
-        }
 
         FileUtils.delete(aInstallDir + "/boot.img");
         FileUtils.delete(aInstallDir + "/magisk_patch.img");
 
-        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
+        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img"))
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
-        }
+
         List<String> stdout = new ArrayList<>();
         // 使用面具自带的脚本进行修补
         boolean isSuccess = aShell.newJob()
@@ -77,16 +76,15 @@ public class RestoreUtils {
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();
-        if (!isSuccess) {
+        if (!isSuccess)
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
-        }
 
         LogUtils.d("restoreMagisk", String.join("\n", stdout));
 
         aShell.newJob().add("./magiskboot cleanup", "mv ./new-boot.img " + aInstallDir + "/magisk_patch.img", "rm ./stock_boot.img").exec();
-        if (!FlashUtils.flash_image(aInstallDir + "/magisk_patch.img", srcBoot)) {
+        if (!FlashUtils.flash_image(aInstallDir + "/magisk_patch.img", srcBoot))
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
-        }
+
         ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");
         Shell.cmd("mv " + aInstallDir + "/boot.img " + aBackupDir + "/boot.img").exec();
 
@@ -100,14 +98,12 @@ public class RestoreUtils {
 
         // 提取当前分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + Config.currentSlot;
-        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110")) {
+        if (!aFileSystemManager.getFile(srcBoot).exists() || Build.MODEL.equals("PHP110"))
             srcBoot = "/dev/block/bootdevice/by-name/boot" + Config.currentSlot;
-        }
 
         ShellUtils.fastCmd("rm -r " + aInstallDir + "/*.img");
-        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img")) {
+        if (!FlashUtils.extract_image(srcBoot, aInstallDir + "/boot.img"))
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXTRACT_ERROR, "镜像分区提取错误，请自行操作");
-        }
 
         ShellUtils.fastCmd("cp -f " + aInstallDir + "/magiskboot /data/adb/ksu/bin/magiskboot");
         ShellUtils.fastCmd("chmod 755 /data/adb/ksu/bin/magiskboot");
@@ -118,20 +114,19 @@ public class RestoreUtils {
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();
-        if (!isSuccess) {
+        if (!isSuccess)
             return new PatchUtils.Result(PatchUtils.ErrorCode.EXEC_ERROR, String.join("\n", stdout));
-        }
+
         LogUtils.d("restoreKernelSU", String.join("\n", stdout));
 
         String patch_img = ShellUtils.fastCmd("cd " + aInstallDir + " & ls kernelsu_*.img");
 
-        if (TextUtils.isEmpty(patch_img)) {
+        if (TextUtils.isEmpty(patch_img))
             return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "获取修补文件错误，请自行操作");
-        }
 
-        if (!FlashUtils.flash_image(aInstallDir + "/" + patch_img, srcBoot)) {
+        if (!FlashUtils.flash_image(aInstallDir + "/" + patch_img, srcBoot))
             return new PatchUtils.Result(PatchUtils.ErrorCode.FLASH_ERROR, "刷入镜像失败，请自行操作");
-        }
+
         ShellUtils.fastCmd("rm -r " + aBackupDir + "/*.img");
         Shell.cmd("mv " + aInstallDir + "/boot.img " + aBackupDir + "/boot.img").exec();
         return new PatchUtils.Result(PatchUtils.ErrorCode.SUCCESS, "还原镜像完成");

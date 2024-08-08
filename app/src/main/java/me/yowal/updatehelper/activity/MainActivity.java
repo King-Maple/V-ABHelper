@@ -364,23 +364,16 @@ public class MainActivity extends BaseActivity {
         else
             binding.infoRootType.setText(String.format("Root实现：%s", "None"));
 
-        //判断是否支持增量更新
-        if (ksuVersion > 0 && UpdateServiceManager.getInstance().KsuIsLkmMode()) {
+        //这里直接判断是否Lkm模式，这个只会在Ksu环境下才能读取出来
+        if (UpdateServiceManager.getInstance().KsuIsLkmMode())
             supportOta = true;
+        else
+            supportOta = !binding.infoRootType.getText().toString().contains("None");
+
+        if (Config.isVab && supportOta)
             binding.infoSupportOta.setText(String.format("OTA更新：%s", "支持"));
-        }
-        else if (!TextUtils.isEmpty(magiskVersion)) {
-            supportOta = true;
-            binding.infoSupportOta.setText(String.format("OTA更新：%s", "支持"));
-        }
-        else if (!TextUtils.isEmpty(apatchVersion)) {
-            supportOta = true;
-            binding.infoSupportOta.setText(String.format("OTA更新：%s", "支持"));
-        }
-        else {
-            supportOta = false;
+        else
             binding.infoSupportOta.setText(String.format("OTA更新：%s", "不支持"));
-        }
 
         aPatchUtils = new PatchUtils(aContext, aInstallDir);
         aRestoreUtils = new RestoreUtils(aContext, aInstallDir);

@@ -19,6 +19,7 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
+libSuio = { module = "com.github.topjohnwu.libsu:io", version.ref = "libsuVersion" }
 libSuCore = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsuVersion" }
 libSuNio = { module = "com.github.topjohnwu.libsu:nio", version.ref = "libsuVersion" }
 libSuService = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsuVersion" }

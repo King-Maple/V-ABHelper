@@ -202,10 +202,8 @@ public class MainActivity extends BaseActivity {
 
                 Shell.cmd("mv " + new File(getFilesDir(),"magisk_uninstaller.sh").getAbsolutePath() + " /data/adb/magisk/magisk_uninstaller.sh").exec();
 
-                Shell.cmd("chmod -R 777 " + getFilesDir().getAbsolutePath()).exec();
+                Shell.cmd("chmod -R 755 " + getFilesDir().getAbsolutePath()).exec();
 
-                //int test = shell.newJob().add(getFilesDir() + "/magiskboot cpio /sdcard/ramdisk.cpio test").exec().getCode();
-                //LogUtils.d("ramdisk.cpio", test + "");
                 bindRootService();
             } else {
                 binding.buttonFlash.setVisibility(View.GONE);
@@ -407,14 +405,14 @@ public class MainActivity extends BaseActivity {
     }
 
     private void flashFinish() {
-        getMainHandler().post(() -> {
+        runOnUiThread(() -> {
             binding.buttonFlash.setVisibility(View.VISIBLE);
             binding.buttonProgress.setVisibility(View.GONE);
         });
     }
 
     private void flashStart(int state, String text) {
-        getMainHandler().post(() -> {
+        runOnUiThread(() -> {
             binding.buttonFlash.setVisibility(View.GONE);
             binding.buttonProgress.setVisibility(View.VISIBLE);
             if (state > -1)
@@ -430,7 +428,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showDialog(String title, CharSequence message) {
-        getMainHandler().post(() -> CreateMaterialAlertDialogBuilder()
+        runOnUiThread(() -> CreateMaterialAlertDialogBuilder()
                 .setTitle(title)
                 .setCancelable(false)
                 .setMessage(message)
@@ -439,7 +437,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showPatchErrorDialog(String error) {
-        getMainHandler().post(() -> CreateMaterialAlertDialogBuilder()
+        runOnUiThread(() -> CreateMaterialAlertDialogBuilder()
                 .setTitle("修补失败")
                 .setCancelable(false)
                 .setMessage("运行修补脚本失败，是否查看错误信息")
@@ -450,7 +448,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showRebootDialog(String title,String message) {
-        getMainHandler().post(() -> CreateMaterialAlertDialogBuilder()
+        runOnUiThread(() -> CreateMaterialAlertDialogBuilder()
                 .setTitle(title)
                 .setCancelable(false)
                 .setMessage(message)

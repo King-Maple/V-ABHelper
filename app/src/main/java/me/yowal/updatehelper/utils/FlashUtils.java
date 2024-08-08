@@ -5,6 +5,7 @@ import android.util.Log;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 import com.topjohnwu.superuser.nio.ExtendedFile;
+import com.topjohnwu.superuser.io.SuRandomAccessFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,7 +82,7 @@ public class FlashUtils {
     public static boolean modifyPrivate(String installDir) {
         if (!Config.flymemodel.equals("M2391") && !Config.flymemodel.equals("M2381"))
             return true;
-        RandomAccessFile randomAccessFile = null;
+        SuRandomAccessFile randomAccessFile = null;
         try {
             LogUtils.i("modifyPrivate", "modifyPrivate start");
             String srcImage = "/dev/block/bootdevice/by-name/private";
@@ -90,8 +91,8 @@ public class FlashUtils {
                 LogUtils.e("modifyPrivate", "extract image private fail");
                 return false;
             }
-            ShellUtils.fastCmd("chmod 777 " + installDir + "/private.img");
-            randomAccessFile = new RandomAccessFile(installDir + "/private.img", "rw");
+            //ShellUtils.fastCmd("chmod 777 " + installDir + "/private.img");
+            randomAccessFile =  SuRandomAccessFile.open(installDir + "/private.img", "rw");
             int keySize = 0x14120 - 0x14000;
             byte[] bootlodaerKey = new byte[keySize];
             randomAccessFile.seek(0x14000);

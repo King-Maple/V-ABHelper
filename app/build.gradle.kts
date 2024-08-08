@@ -10,8 +10,8 @@ android {
         applicationId = "me.yowal.updatehelper"
         minSdk = 30
         targetSdk = 34
-        versionCode = 300
-        versionName = "3.0.0"
+        versionCode = 301
+        versionName = "3.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -61,6 +61,7 @@ dependencies {
 
     //libsu
     implementation(libs.libSuCore)
+    implementation(libs.libSuio)
     implementation(libs.libSuNio)
     implementation(libs.libSuService)
 

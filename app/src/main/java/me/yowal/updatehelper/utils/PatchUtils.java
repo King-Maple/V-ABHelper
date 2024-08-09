@@ -49,7 +49,7 @@ public class PatchUtils {
         }
 
         ExtendedFile stub = aFileSystemManager.getFile("/data/adb/magisk/stub.apk");
-        if (!stub.exists() && AssetsUtils.writeFile(aContext, "stub.apk", stub))
+        if (!stub.exists() && !AssetsUtils.writeFile(aContext, "stub.apk", stub))
             return new Result(ErrorCode.EVEN_ERROR, "面具环境不全，请自行操作");
 
         // 读取当前分区，用来判断第二分区

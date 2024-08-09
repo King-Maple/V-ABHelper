@@ -194,15 +194,11 @@ public class MainActivity extends BaseActivity {
             if (shell.isRoot()) {
                 binding.homeNoRoot.setVisibility(View.GONE);
                 binding.buttonFlash.setVisibility(View.VISIBLE);
-                Shell.cmd("rm -r " + getFilesDir().toString()).exec();
-                Shell.cmd("mkdir " + getFilesDir().toString()).exec();
-                AssetsUtils.writeFile(aContext, "magiskboot", new File(getFilesDir(), "magiskboot"));
-                AssetsUtils.writeFile(aContext, R.raw.apatch_patch, new File(getFilesDir(),"apatch_patch.sh"));
-                AssetsUtils.writeFile(aContext, R.raw.magisk_uninstaller, new File(getFilesDir(),"magisk_uninstaller.sh"));
-
-                Shell.cmd("mv " + new File(getFilesDir(),"magisk_uninstaller.sh").getAbsolutePath() + " /data/adb/magisk/magisk_uninstaller.sh").exec();
-
-                Shell.cmd("chmod -R 755 " + getFilesDir().getAbsolutePath()).exec();
+                Shell.cmd("rm -r " + aInstallDir).exec();
+                Shell.cmd("mkdir " + aInstallDir).exec();
+                AssetsUtils.writeFile(aContext, "magiskboot", new File(aInstallDir, "magiskboot"));
+                AssetsUtils.writeFile(aContext, R.raw.apatch_patch, new File(aInstallDir,"apatch_patch.sh"));
+                Shell.cmd("chmod -R 755 " + aInstallDir).exec();
 
                 bindRootService();
             } else {

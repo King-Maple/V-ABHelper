@@ -58,7 +58,6 @@ public class UpdateService extends RootService {
         } catch (IOException e) {
             e.printStackTrace();
         }*/
-
     }
 
     private String GetInstallPath(String pkg) {

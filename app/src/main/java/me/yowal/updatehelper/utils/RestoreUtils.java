@@ -6,6 +6,7 @@ import android.text.TextUtils;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
+import com.topjohnwu.superuser.nio.ExtendedFile;
 import com.topjohnwu.superuser.nio.FileSystemManager;
 
 import java.io.File;
@@ -44,12 +45,18 @@ public class RestoreUtils {
 
 
     public PatchUtils.Result restoreMagisk() {
-        String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh", "magisk_uninstaller.sh"};
+        String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
         for (String file: envList) {
             if (!aFileSystemManager.getFile("/data/adb/magisk/" + file).exists()) {
                 return new PatchUtils.Result(PatchUtils.ErrorCode.EVEN_ERROR, file + " 文件不存在，请自行修补");
             }
         }
+
+
+        ExtendedFile uninstaller = aFileSystemManager.getFile("/data/adb/magisk/magisk_uninstaller.sh");
+        if (!uninstaller.exists() && !AssetsUtils.writeFile(aContext, R.raw.magisk_uninstaller, uninstaller))
+            return new PatchUtils.Result(PatchUtils.ErrorCode.EVEN_ERROR, "面具环境不全，请自行操作");
+
         Shell.cmd("chmod 755 /data/adb/magisk/magisk_uninstaller.sh").exec();
 
         // 提取当前分区的boot镜像

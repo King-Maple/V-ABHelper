@@ -194,8 +194,10 @@ public class MainActivity extends BaseActivity {
             if (shell.isRoot()) {
                 binding.homeNoRoot.setVisibility(View.GONE);
                 binding.buttonFlash.setVisibility(View.VISIBLE);
+
                 Shell.cmd("rm -r " + aInstallDir).exec();
-                Shell.cmd("mkdir " + aInstallDir).exec();
+
+                FileUtils.mkdirs(getFilesDir());
 
                 AssetsUtils.writeFile(aContext, "magiskboot", new File(aInstallDir, "magiskboot"));
                 AssetsUtils.writeFile(aContext, R.raw.apatch_patch, new File(aInstallDir,"apatch_patch.sh"));

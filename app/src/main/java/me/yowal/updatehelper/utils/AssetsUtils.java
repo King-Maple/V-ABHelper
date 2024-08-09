@@ -23,11 +23,12 @@ public class AssetsUtils {
             if (outFile instanceof ExtendedFile) {
                 output = ((ExtendedFile)outFile).newOutputStream();
             } else {
-                output = Files.newOutputStream(outFile.toPath());
+                output = new FileOutputStream(outFile);
             }
             return IOUtils.copy(input, output) > 0;
         } catch (IOException e) {
             e.printStackTrace();
+            LogUtils.d("AssetsUtils.writeFile",e.toString());
             return false;
         } finally {
             IOUtils.close(input);
@@ -43,7 +44,7 @@ public class AssetsUtils {
             if (outFile instanceof ExtendedFile) {
                 output = ((ExtendedFile)outFile).newOutputStream();
             } else {
-                output = Files.newOutputStream(outFile.toPath());
+                output = new FileOutputStream(outFile);
             }
             return IOUtils.copy(input, output) > 0;
         } catch (IOException e) {

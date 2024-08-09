@@ -53,9 +53,9 @@ public class FileUtils {
     }
 
 
-    private static File mkdirs(final File directory) throws IOException {
+    public static File mkdirs(final File directory)  {
         if ((directory != null) && (!directory.mkdirs() && !directory.isDirectory())) {
-            throw new IOException("Cannot create directory '" + directory + "'.");
+            return null;
         }
         return directory;
     }

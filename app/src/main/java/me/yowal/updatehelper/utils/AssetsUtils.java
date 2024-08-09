@@ -15,7 +15,7 @@ import java.nio.file.Files;
 
 public class AssetsUtils {
 
-    public static boolean writeFile(Context conetext,String fileName, File outFile) {
+    public static boolean writeFile(Context conetext, String fileName, File outFile) {
         InputStream input = null;
         OutputStream output = null;
         try {

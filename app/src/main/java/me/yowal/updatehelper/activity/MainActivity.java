@@ -196,8 +196,10 @@ public class MainActivity extends BaseActivity {
                 binding.buttonFlash.setVisibility(View.VISIBLE);
                 Shell.cmd("rm -r " + aInstallDir).exec();
                 Shell.cmd("mkdir " + aInstallDir).exec();
+
                 AssetsUtils.writeFile(aContext, "magiskboot", new File(aInstallDir, "magiskboot"));
                 AssetsUtils.writeFile(aContext, R.raw.apatch_patch, new File(aInstallDir,"apatch_patch.sh"));
+
                 Shell.cmd("chmod -R 755 " + aInstallDir).exec();
 
                 bindRootService();

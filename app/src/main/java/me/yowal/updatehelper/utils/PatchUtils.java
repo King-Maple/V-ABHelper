@@ -198,7 +198,7 @@ public class PatchUtils {
         FileUtils.delete(aInstallDir + "/kpatch");
         Utils.unLibrary(aApatchManagerDir, "lib/arm64-v8a/libkpatch.so", aInstallDir + "/kpatch");
 
-        ShellUtils.fastCmd("chmod -R 777 " + aInstallDir);
+        ShellUtils.fastCmd("chmod -R 755 " + aInstallDir);
 
         String[] envList = new String[]{"kptools", "magiskboot", "kpimg", "kpatch", "apatch_patch.sh"};
         for (String file: envList) {

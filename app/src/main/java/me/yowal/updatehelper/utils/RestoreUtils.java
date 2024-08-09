@@ -44,18 +44,13 @@ public class RestoreUtils {
 
 
     public PatchUtils.Result restoreMagisk() {
-        String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
+        String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh", "magisk_uninstaller.sh"};
         for (String file: envList) {
             if (!aFileSystemManager.getFile("/data/adb/magisk/" + file).exists()) {
-                return new PatchUtils.Result(PatchUtils.ErrorCode.EVEN_ERROR, "Magisk 环境不全，请自行操作");
+                return new PatchUtils.Result(PatchUtils.ErrorCode.EVEN_ERROR, file + " 文件不存在，请自行修补");
             }
         }
-
-        Shell.cmd("chmod 777 /data/adb/magisk/magisk_uninstaller.sh").exec();
-
-        if (!aFileSystemManager.getFile("/data/adb/magisk/magisk_uninstaller.sh").exists()) {
-            return new PatchUtils.Result(PatchUtils.ErrorCode.EVEN_ERROR, "卸载环境不全，请自行操作");
-        }
+        Shell.cmd("chmod 755 /data/adb/magisk/magisk_uninstaller.sh").exec();
 
         // 提取当前分区的boot镜像
         String srcBoot = "/dev/block/bootdevice/by-name/init_boot" + Config.currentSlot;
@@ -143,7 +138,7 @@ public class RestoreUtils {
         if (!Utils.unLibrary(aApatchManagerDir, "lib/arm64-v8a/libkptools.so", aInstallDir + "/kptools"))
             return new PatchUtils.Result(PatchUtils.ErrorCode.OTHER_ERROR, "kptools 解压失败，请自行操作");
 
-        ShellUtils.fastCmd("chmod -R 777 " + aInstallDir);
+        ShellUtils.fastCmd("chmod -R 755 " + aInstallDir);
 
         String[] envList = new String[]{"kptools", "magiskboot", "apatch_unpatch.sh"};
         for (String file: envList) {

@@ -45,7 +45,7 @@ public class PatchUtils {
         String[] envList = new String[]{"busybox", "magiskboot", "magiskinit", "util_functions.sh", "boot_patch.sh"};
         for (String file: envList) {
             if (!aFileSystemManager.getFile("/data/adb/magisk/" + file).exists())
-                return new Result(ErrorCode.EVEN_ERROR, "Magisk 环境不全，请自行操作");
+                return new Result(ErrorCode.EVEN_ERROR, file + " 文件不存在，请自行修补");
         }
 
         ExtendedFile stub = aFileSystemManager.getFile("/data/adb/magisk/stub.apk");

@@ -5,9 +5,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.util.Pair;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import me.yowal.updatehelper.manager.UpdateServiceManager;
 
 public class Utils {
 
@@ -158,6 +163,78 @@ public class Utils {
             IOUtils.close(zin_zip);
         }
         return false;
+    }
+
+
+    private static int parseVersion(String output) {
+        int version = 0;
+        String[] lines = output.split("\n");
+        for (String line : lines) {
+            String trimmedLine = line.trim();
+            String[] parts = trimmedLine.split("\\s+");
+            if (parts.length > 0) {
+                String numStr = parts[parts.length - 1];
+                try {
+                    version = Integer.parseInt(numStr);
+                    break;
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return version;
+    }
+
+    public static int get_apatch_version() {
+        String suPath = ShellUtils.fastCmd("cat /data/adb/ap/su_path").trim();
+        if (suPath.isEmpty()) {
+            return 0;
+        }
+        String stdout = ShellUtils.fastCmd(suPath + " -V");
+        if (!stdout.contains("APatch")) {
+            return 0;
+        }
+        String stdout1 = ShellUtils.fastCmd("/data/adb/apd -V");
+        return parseVersion(stdout1);
+    }
+
+    public static int get_magisk_version() {
+        String magiskVersion = ShellUtils.fastCmd("magisk -V");
+        try {
+            return Integer.parseInt(magiskVersion);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static Pair<String, Boolean> cachedRootImpl = null;
+
+    public static Pair<String, Boolean> get_root_impl() {
+        if (cachedRootImpl == null) {
+            int ksuVersion = UpdateServiceManager.getInstance().GetKsuVersion();
+
+            int magiskVersion = get_magisk_version();
+            int apatchVersion = get_apatch_version();
+
+            String currentImpl;
+            if (ksuVersion > 0 && apatchVersion == 0 && magiskVersion > 0) {
+                currentImpl = "Multiple";
+            } else if (ksuVersion > 0 && apatchVersion == 0 && magiskVersion == 0) {
+                currentImpl = "KernelSU (" + ksuVersion + ")";
+            } else if (ksuVersion == 0 && apatchVersion > 0 && magiskVersion == 0) {
+                currentImpl = "APatch (" + apatchVersion + ")";
+            } else if (ksuVersion == 0 && apatchVersion == 0 && magiskVersion > 0) {
+                currentImpl = "Magisk (" + magiskVersion + ")";
+            } else if (ksuVersion > 0) {
+                currentImpl = "KernelSU (" + ksuVersion + ")";
+            } else {
+                currentImpl = "None";
+            }
+
+            boolean isLkm = ksuVersion > 0 && UpdateServiceManager.getInstance().KsuIsLkmMode();
+            cachedRootImpl = new Pair<>(currentImpl, isLkm);
+        }
+        return cachedRootImpl;
     }
 
 }

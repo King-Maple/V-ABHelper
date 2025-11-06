@@ -20,8 +20,6 @@ interface IUpdateService {
 
     int GetKsuVersion();
 
-    boolean KsuisSafeMode();
-
     boolean KsuIsLkmMode();
 
     int findValidateSourceHash();

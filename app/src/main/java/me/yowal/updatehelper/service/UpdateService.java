@@ -41,24 +41,7 @@ public class UpdateService extends RootService {
 
     @Override
     public void onCreate() {
-        /*try {
-            FileInputStream input = new FileInputStream("/sdcard/还原ramdisk.cpio");
-            byte [] cpio = IOUtils.toByteArray(input);
-            int tailIndex = Utils.findBytes(cpio, "TRAILER!!!".getBytes());
-            if (tailIndex > 0)
-                tailIndex += 10;
-            int padd = 512 - tailIndex % 512;
-            input.close();
-            RandomAccessFile randomAccessFile = new RandomAccessFile("/sdcard/还原ramdisk.cpio", "rw");
-            randomAccessFile.seek(tailIndex);
-            randomAccessFile.write(new byte[padd]);
-            randomAccessFile.close();
-            LogUtils.d("fixCpio", "tailIndex = " + tailIndex);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
+
     }
 
     private String GetInstallPath(String pkg) {
@@ -168,11 +151,6 @@ public class UpdateService extends RootService {
         @Override
         public int GetKsuVersion() {
             return Natives.getVersion();
-        }
-
-        @Override
-        public boolean KsuisSafeMode() {
-            return Natives.isSafeMode();
         }
 
         @Override

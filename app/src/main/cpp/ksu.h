@@ -5,20 +5,35 @@
 #ifndef KERNELSU_KSU_H
 #define KERNELSU_KSU_H
 
-#include <linux/capability.h>
+#include <cstdint>
+#include <sys/ioctl.h>
+#include <utility>
 
+#define KSU_INSTALL_MAGIC1 0xDEADBEEF
+#define KSU_INSTALL_MAGIC2 0xCAFEBABE
 
-bool become_manager(const char *);
+#define CMD_GET_VERSION 2
 
-int get_version();
+#define KSU_IOCTL_GET_INFO _IOC(_IOC_READ, 'K', 2, 0)
 
-bool get_allow_list(int *uids, int *size);
+struct ksu_get_info_cmd {
+    uint32_t version; // Output: KERNEL_SU_VERSION
+    uint32_t flags;   // Output: flags (bit 0: MODULE mode)
+    uint32_t features; // Output: max feature ID supported (KSU_FEATURE_MAX)
+};
 
-bool uid_should_umount(int uid);
-
-bool is_safe_mode();
+uint32_t get_version();
 
 bool is_lkm_mode();
+
+
+inline std::pair<int, int> legacy_get_info() {
+    int32_t version = -1;
+    int32_t flags = 0;
+    int32_t result = 0;
+    prctl(KSU_INSTALL_MAGIC1, CMD_GET_VERSION, &version, &flags, &result);
+    return {version, flags};
+}
 
 int findValidateFunction(int pid);
 
@@ -31,65 +46,5 @@ template <typename T> T readMemory(int fd, uint64_t addr) {
 template <typename T> bool writeMemory(int fd, uint64_t addr, T value) {
     return pwrite64(fd, &value, sizeof(T), addr) > 0;
 }
-
-#define KSU_APP_PROFILE_VER 2
-#define KSU_MAX_PACKAGE_NAME 256
-// NGROUPS_MAX for Linux is 65535 generally, but we only supports 32 groups.
-#define KSU_MAX_GROUPS 32
-#define KSU_SELINUX_DOMAIN 64
-
-using p_key_t = char[KSU_MAX_PACKAGE_NAME];
-
-struct root_profile {
-    int32_t uid;
-    int32_t gid;
-
-    int32_t groups_count;
-    int32_t groups[KSU_MAX_GROUPS];
-
-    // kernel_cap_t is u32[2] for capabilities v3
-    struct {
-        uint64_t effective;
-        uint64_t permitted;
-        uint64_t inheritable;
-    } capabilities;
-
-    char selinux_domain[KSU_SELINUX_DOMAIN];
-
-    int32_t namespaces;
-};
-
-struct non_root_profile {
-    bool umount_modules;
-};
-
-struct app_profile {
-    // It may be utilized for backward compatibility, although we have never explicitly made any promises regarding this.
-    uint32_t version;
-
-    // this is usually the package of the app, but can be other value for special apps
-    char key[KSU_MAX_PACKAGE_NAME];
-    int32_t current_uid;
-    bool allow_su;
-
-    union {
-        struct {
-            bool use_default;
-            char template_name[KSU_MAX_PACKAGE_NAME];
-
-            struct root_profile profile;
-        } rp_config;
-
-        struct {
-            bool use_default;
-
-            struct non_root_profile profile;
-        } nrp_config;
-    };
-};
-
-bool set_app_profile(const app_profile *profile);
-
-bool get_app_profile(p_key_t key, app_profile *profile);
 
 #endif //KERNELSU_KSU_H

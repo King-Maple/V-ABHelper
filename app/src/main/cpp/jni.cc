@@ -151,12 +151,14 @@ extern "C" {
     }
 
     JNICALL jint GetVersion(JNIEnv * env , jclass clazz) {
-        return get_version();
+        int version = get_version();
+        if (version > 0) {
+            return version;
+        }
+        // try legacy method as fallback
+        return legacy_get_info().first;
     }
 
-    JNICALL jboolean isSafeMode(JNIEnv *env, jclass clazz) {
-        return is_safe_mode();
-    }
 
     JNICALL jboolean isLkmMode(JNIEnv *env, jclass clazz) {
         return is_lkm_mode();
@@ -196,7 +198,6 @@ extern "C" {
 
 static JNINativeMethod getMethods[] = {
         {"getVersion", "()I", (void *) GetVersion},
-        {"isSafeMode", "()Z", (void *) isSafeMode},
         {"isLkmMode", "()Z", (void *) isLkmMode},
         {"passValidateSourceHash", "(Ljava/lang/String;I)V", (void *) passValidateSourceHash},
         {"findValidateSourceHash", "()I", (void *) findValidateSourceHash},

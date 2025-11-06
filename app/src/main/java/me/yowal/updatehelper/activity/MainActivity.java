@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -48,6 +49,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import me.yowal.updatehelper.Config;
 import me.yowal.updatehelper.R;
@@ -82,8 +84,6 @@ public class MainActivity extends BaseActivity {
     private TouchFeedUtils aTouchFeedUtils;
 
     private NotificationManager aNotificationManager;
-
-    private int ksuVersion = -1;
 
     private String aInstallDir;
 
@@ -357,29 +357,13 @@ public class MainActivity extends BaseActivity {
     }
 
     private void initRootAndOta() {
-        ksuVersion = UpdateServiceManager.getInstance().GetKsuVersion();
-        String magiskVersion = ShellUtils.fastCmd("magisk -V");
-        String apatchVersion = ShellUtils.fastCmd("cat /data/adb/ap/version");
-        if (ksuVersion > 0)
-            binding.infoRootType.setText(String.format("Root实现：%s (%s)", "KernelSU", ksuVersion));
-        else if (!TextUtils.isEmpty(magiskVersion))
-            binding.infoRootType.setText(String.format("Root实现：%s (%s)", "Magisk", magiskVersion));
-        else if (!TextUtils.isEmpty(apatchVersion))
-            binding.infoRootType.setText(String.format("Root实现：%s (%s)", "APatch", apatchVersion));
-        else
-            binding.infoRootType.setText(String.format("Root实现：%s", "None"));
-
-        //这里直接判断是否Lkm模式，这个只会在Ksu环境下才能读取出来
-        if (UpdateServiceManager.getInstance().KsuIsLkmMode())
-            supportOta = true;
-        else
-            supportOta = !binding.infoRootType.getText().toString().contains("None");
-
+        Pair<String, Boolean> impl = Utils.get_root_impl();
+        binding.infoRootType.setText(String.format("Root实现：%s ", impl.first));
+        supportOta = impl.second || (!impl.first.equals("None") && !impl.first.equals("Multiple"));
         if (Config.isVab && supportOta)
             binding.infoSupportOta.setText(String.format("OTA更新：%s", "支持"));
         else
             binding.infoSupportOta.setText(String.format("OTA更新：%s", "不支持"));
-
         aPatchUtils = new PatchUtils(aContext, aInstallDir);
         aRestoreUtils = new RestoreUtils(aContext, aInstallDir);
     }

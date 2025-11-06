@@ -7,86 +7,97 @@
 #include <cstring>
 #include <cstdio>
 #include <unistd.h>
+#include <utility>
+#include <android/log.h>
 #include <dirent.h>
 #include <cstdlib>
-#include <fcntl.h>
+
+#include <unistd.h>
+#include <climits>
+#include <sys/syscall.h>
 #include <LogUtils.h>
 #include "ksu.h"
 #include "ptrace_utils.h"
 
-#define KERNEL_SU_OPTION 0xDEADBEEF
 
-#define CMD_GRANT_ROOT 0
+static int fd = -1;
 
-#define CMD_BECOME_MANAGER 1
-#define CMD_GET_VERSION 2
-#define CMD_ALLOW_SU 3
-#define CMD_DENY_SU 4
-#define CMD_GET_SU_LIST 5
-#define CMD_GET_DENY_LIST 6
-#define CMD_CHECK_SAFEMODE 9
-
-#define CMD_GET_APP_PROFILE 10
-#define CMD_SET_APP_PROFILE 11
-
-#define CMD_IS_UID_GRANTED_ROOT 12
-#define CMD_IS_UID_SHOULD_UMOUNT 13
-
-static bool ksuctl(int cmd, void* arg1, void* arg2) {
-    int32_t result = 0;
-    prctl(KERNEL_SU_OPTION, cmd, arg1, arg2, &result);
-    return result == KERNEL_SU_OPTION;
-}
-
-bool become_manager(const char* pkg) {
-    char param[128];
-    uid_t uid = getuid();
-    uint32_t userId = uid / 100000;
-    if (userId == 0) {
-        sprintf(param, "/data/data/%s", pkg);
-    } else {
-        snprintf(param, sizeof(param), "/data/user/%d/%s", userId, pkg);
+static inline int scan_driver_fd() {
+    const char *kName = "[ksu_driver]";
+    DIR *dir = opendir("/proc/self/fd");
+    if (!dir) {
+        return -1;
     }
-
-    return ksuctl(CMD_BECOME_MANAGER, param, nullptr);
-}
-
-// cache the result to avoid unnecessary syscall
-static bool is_lkm;
-int get_version() {
-    int32_t version = -1;
-    int32_t lkm = 0;
-    ksuctl(CMD_GET_VERSION, &version, &lkm);
-    if (!is_lkm && lkm != 0) {
-        is_lkm = true;
+    int found = -1;
+    struct dirent *de;
+    char path[64];
+    char target[PATH_MAX];
+    while ((de = readdir(dir)) != nullptr) {
+        if (de->d_name[0] == '.') {
+            continue;
+        }
+        char *endptr = nullptr;
+        long fd_long = strtol(de->d_name, &endptr, 10);
+        if (!de->d_name[0] || *endptr != '\0' || fd_long < 0 || fd_long > INT_MAX) {
+            continue;
+        }
+        snprintf(path, sizeof(path), "/proc/self/fd/%s", de->d_name);
+        ssize_t n = readlink(path, target, sizeof(target) - 1);
+        if (n < 0) {
+            continue;
+        }
+        target[n] = '\0';
+        const char *base = strrchr(target, '/');
+        base = base ? base + 1 : target;
+        if (strstr(base, kName)) {
+            found = (int)fd_long;
+            break;
+        }
     }
-    return version;
+    closedir(dir);
+    return found;
 }
 
-bool get_allow_list(int *uids, int *size) {
-    return ksuctl(CMD_GET_SU_LIST, uids, size);
+// 这里需要先安装 Ksu 的Fd
+int init_driver_fd() {
+    int fd_ = scan_driver_fd();
+    if (fd_ <= 0) {
+        syscall(SYS_reboot, KSU_INSTALL_MAGIC1, KSU_INSTALL_MAGIC2, 0, &fd_);
+    }
+    return fd_;
 }
 
-bool is_safe_mode() {
-    return ksuctl(CMD_CHECK_SAFEMODE, nullptr, nullptr);
+template<typename... Args>
+static int ksuctl(unsigned long op, Args &&... args) {
+    if (fd < 0) {
+        fd = init_driver_fd();
+    }
+    static_assert(sizeof...(Args) <= 1, "ioctl expects at most one extra argument");
+    return ioctl(fd, op, std::forward<Args>(args)...);
 }
+
+
+static struct ksu_get_info_cmd g_version {};
+
+struct ksu_get_info_cmd get_info() {
+    if (!g_version.version) {
+        ksuctl(KSU_IOCTL_GET_INFO, &g_version);
+    }
+    return g_version;
+}
+
+uint32_t get_version() {
+    auto info = get_info();
+    return info.version;
+}
+
 
 bool is_lkm_mode() {
-    // you should call get_version first!
-    return is_lkm;
-}
-
-bool uid_should_umount(int uid) {
-    bool should;
-    return ksuctl(CMD_IS_UID_SHOULD_UMOUNT, reinterpret_cast<void*>(uid), &should) && should;
-}
-
-bool set_app_profile(const app_profile *profile) {
-    return ksuctl(CMD_SET_APP_PROFILE, (void*) profile, nullptr);
-}
-
-bool get_app_profile(p_key_t key, app_profile *profile) {
-    return ksuctl(CMD_GET_APP_PROFILE, (void*) profile, nullptr);
+    auto info = get_info();
+    if (info.version > 0) {
+        return (info.flags & 0x1) != 0;
+    }
+    return (legacy_get_info().second & 0x1) != 0;
 }
 
 

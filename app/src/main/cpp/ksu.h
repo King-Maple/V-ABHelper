@@ -28,7 +28,7 @@ bool is_lkm_mode();
 
 
 inline std::pair<int, int> legacy_get_info() {
-    int32_t version = -1;
+    int32_t version = 0;
     int32_t flags = 0;
     int32_t result = 0;
     prctl(KSU_INSTALL_MAGIC1, CMD_GET_VERSION, &version, &flags, &result);

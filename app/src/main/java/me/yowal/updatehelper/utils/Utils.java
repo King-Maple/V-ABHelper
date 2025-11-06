@@ -191,7 +191,7 @@ public class Utils {
             return 0;
         }
         String stdout = ShellUtils.fastCmd(suPath + " -V");
-        if (!stdout.contains("APatch")) {
+        if (stdout.isEmpty()) {
             return 0;
         }
         String stdout1 = ShellUtils.fastCmd("/data/adb/apd -V");
@@ -212,10 +212,8 @@ public class Utils {
     public static Pair<String, Boolean> get_root_impl() {
         if (cachedRootImpl == null) {
             int ksuVersion = UpdateServiceManager.getInstance().GetKsuVersion();
-
             int magiskVersion = get_magisk_version();
             int apatchVersion = get_apatch_version();
-
             String currentImpl;
             if (ksuVersion > 0 && apatchVersion == 0 && magiskVersion > 0) {
                 currentImpl = "Multiple";

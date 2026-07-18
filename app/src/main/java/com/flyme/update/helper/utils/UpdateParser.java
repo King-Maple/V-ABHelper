@@ -8,9 +8,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -49,37 +48,39 @@ public class UpdateParser {
                     payloadSize = nextElement.getCompressedSize();
                     payloadOffset = offset - nextElement.getCompressedSize();
                 } else if ("payload_properties.txt".equals(name)) {
-                    BufferedReader buffer = new BufferedReader(new InputStreamReader(zipFile.getInputStream(nextElement)));
-                    mUpdateInfo.setHeaderKeyValuePairs(buffer.lines().toArray(String[]::new));
+                    try (BufferedReader buffer = new BufferedReader(new InputStreamReader(
+                            zipFile.getInputStream(nextElement), StandardCharsets.UTF_8))) {
+                        mUpdateInfo.setHeaderKeyValuePairs(buffer.lines().toArray(String[]::new));
+                    }
                 } else if ("META-INF/build.prop".equals(name)) {
-                    BufferedReader buffer = new BufferedReader(new InputStreamReader(zipFile.getInputStream(nextElement)));
-                    String[] example = buffer.lines().toArray(String[]::new);
-                    for (String str : example) {
-                        if (str.contains("ro.product.flyme.model")) {
-                            Pattern pattern = Pattern.compile("ro.product.flyme.model=(.*)\\n");
-                            Matcher matcher = pattern.matcher(str + "\n");
-                            if (matcher.find())
-                                mUpdateInfo.setFlymeid(matcher.group(1));
-                        } else if (str.contains("ro.build.display.id")) {
-                            Pattern pattern = Pattern.compile("ro.build.display.id=(.*)\\n");
-                            Matcher matcher = pattern.matcher(str + "\n");
-                            if (matcher.find())
-                                mUpdateInfo.setDisplayid(matcher.group(1));
-                        } else if (str.contains("ro.build.mask.id")) {
-                            Pattern pattern = Pattern.compile("ro.build.mask.id=(.*)\\n");
-                            Matcher matcher = pattern.matcher(str + "\n");
-                            if (matcher.find())
-                                mUpdateInfo.setMaskid(matcher.group(1));
-                        } else if (str.contains("ro.product.system.model")) {
-                            Pattern pattern = Pattern.compile("ro.product.system.model=(.*)\\n");
-                            Matcher matcher = pattern.matcher(str + "\n");
-                            if (matcher.find())
-                                mUpdateInfo.setBuildInfo(matcher.group(1));
+                    try (BufferedReader buffer = new BufferedReader(new InputStreamReader(
+                            zipFile.getInputStream(nextElement), StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = buffer.readLine()) != null) {
+                            if (line.startsWith("ro.product.flyme.model=")) {
+                                mUpdateInfo.setFlymeid(propertyValue(line));
+                            } else if (line.startsWith("ro.build.display.id=")) {
+                                mUpdateInfo.setDisplayid(propertyValue(line));
+                            } else if (line.startsWith("ro.build.mask.id=")) {
+                                mUpdateInfo.setMaskid(propertyValue(line));
+                            } else if (line.startsWith("ro.product.system.model=")) {
+                                mUpdateInfo.setBuildInfo(propertyValue(line));
+                            } else if (line.startsWith("ro.build.date.utc=")) {
+                                try {
+                                    mUpdateInfo.setBuildTimestamp(Long.parseLong(propertyValue(line)));
+                                } catch (NumberFormatException ignored) {
+                                    mUpdateInfo.setBuildTimestamp(0);
+                                }
+                            }
                         }
                     }
                 } else if ("type.txt".equals(name)) {
-                    String example = IOUtils.toString(zipFile.getInputStream(nextElement));
-                    mUpdateInfo.setType(Integer.parseInt(example));
+                    String example = IOUtils.toString(zipFile.getInputStream(nextElement), StandardCharsets.UTF_8);
+                    try {
+                        mUpdateInfo.setType(Integer.parseInt(example.trim()));
+                    } catch (NumberFormatException ignored) {
+                        mUpdateInfo.setType(-1);
+                    }
                 }
             }
         } catch (IOException e) {
@@ -96,5 +97,10 @@ public class UpdateParser {
         mUpdateInfo.setOffset(payloadOffset);
         mUpdateInfo.setSize(payloadSize);
         return mUpdateInfo;
+    }
+
+    private static String propertyValue(String line) {
+        int separator = line.indexOf('=');
+        return separator >= 0 ? line.substring(separator + 1).trim() : "";
     }
 }

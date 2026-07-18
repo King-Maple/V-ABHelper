@@ -46,7 +46,6 @@ import com.flyme.update.helper.utils.NotificationUtils;
 import com.flyme.update.helper.manager.SuFileManager;
 import com.flyme.update.helper.proxy.UpdateEngineProxy;
 import com.flyme.update.helper.bean.UpdateInfo;
-import com.flyme.update.helper.utils.UpdateParser;
 import com.flyme.update.helper.utils.Utils;
 import com.flyme.update.helper.widget.TouchFeedback;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -88,6 +87,8 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
     private UpdateInfo uUpdateInfo;
 
+    private boolean isDowngradeUpdate;
+
     private final IUpdateCallback engineCallback = new IUpdateCallback.Stub() {
         @Override
         public void onPayloadApplicationComplete(int error_code) {
@@ -96,8 +97,7 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 boolean hasDisplayid = !TextUtils.isEmpty(uUpdateInfo.getDisplayid());
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity, hasDisplayid ? uUpdateInfo.getDisplayid() : "重启手机即可完成更新",  hasDisplayid ? "重启手机即可完成更新" : "恭喜你，更新成功了"));
             } else {
-                UpdateServiceManager.getInstance().cancel();
-                TipDialog.show("更新失败!" , WaitDialog.TYPE.ERROR);
+                activity.getMainHandler().post(() -> showErrorDialog("更新失败", getUpdateErrorMessage(error_code)));
                 mNotificationManager.notify(1, NotificationUtils.notifyMsg(activity,"请稍后重试，或联系开发者反馈","哎呀，开了个小差，更新失败了，错误代号：" + error_code));
             }
         }
@@ -216,20 +216,31 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
     }
 
     private boolean flash_image(String img, String block) {
-        Shell.cmd("blockdev --setrw " + block).exec();
+        // OTA leaves boot partitions read-only; make only the exact target writable temporarily.
+        // OTA 完成后启动分区为只读；仅临时解除目标分区只读标志。
+        if (!Shell.cmd("blockdev --setrw '" + block + "'").exec().isSuccess()) {
+            LogUtils.e("flash_image", "failed to set target block writable");
+            return false;
+        }
         try {
             ExtendedFile bootBlock  = SuFileManager.getInstance().getRemote().getFile(block);
             if (!bootBlock.exists()) {
                 LogUtils.e("flash_image", "block file no exists");
                 return false;
             }
-            ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(img);
-            InputStream in = bootBackup.newInputStream();
-            OutputStream out = bootBlock.newOutputStream();
-            return IOUtils.copy(in, out) > 0;
+            ExtendedFile sourceImage = SuFileManager.getInstance().getRemote().getFile(img);
+            long expectedBytes = sourceImage.length();
+            try (InputStream in = sourceImage.newInputStream();
+                 OutputStream out = bootBlock.newOutputStream()) {
+                long copiedBytes = IOUtils.copyLarge(in, out);
+                out.flush();
+                return expectedBytes > 0 && copiedBytes == expectedBytes;
+            }
         } catch (IOException e) {
             LogUtils.e("flash_image", e.getLocalizedMessage());
             return false;
+        } finally {
+            Shell.cmd("sync", "blockdev --setro '" + block + "'").exec();
         }
 
         /*List<String> out = Shell.getShell().newJob()
@@ -250,9 +261,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 return false;
             }
             ExtendedFile bootBackup = SuFileManager.getInstance().getRemote().getFile(block);
-            InputStream in = bootBlock.newInputStream();
-            OutputStream out = bootBackup.newOutputStream();
-            return IOUtils.copy(in, out) > 0;
+            try (InputStream in = bootBlock.newInputStream();
+                 OutputStream out = bootBackup.newOutputStream()) {
+                long copiedBytes = IOUtils.copyLarge(in, out);
+                out.flush();
+                return copiedBytes > 0;
+            }
         } catch (IOException e) {
             LogUtils.e("extract_image", e.getLocalizedMessage());
             return false;
@@ -342,16 +356,8 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                         .selectFile(new FileSelectCallBack() {
                             @Override
                             public void onSelect(File file, String filePath) {
-                                MessageDialog.build()
-                                        .setTitle("选择文件?")
-                                        .setMessage(filePath)
-                                        .setOkButton("开始更新",(baseDialog, v) -> {
-                                            mWaitDialog = WaitDialog.show("准备更新中...");
-                                            activity.getASynHandler().postDelayed(() -> startUpdate(filePath),2000);
-                                            return false;
-                                        })
-                                        .setCancelButton("取消更新")
-                                        .show();
+                                mWaitDialog = WaitDialog.show("正在检查更新包...");
+                                activity.getASynHandler().post(() -> parseUpdatePackage(filePath));
                             }
                         });
             }
@@ -374,32 +380,108 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
                 .create().show();
     }
 
-    private void startUpdate(String File) {
-        uUpdateInfo = new UpdateParser(File).parse();
-        if (uUpdateInfo.getHeaderKeyValuePairs() == null || uUpdateInfo.getHeaderKeyValuePairs().length == 0) {
+    private void parseUpdatePackage(String filePath) {
+        UpdateInfo updateInfo = UpdateServiceManager.getInstance().parseUpdatePackage(filePath);
+        activity.getMainHandler().post(() -> showUpdateConfirmation(filePath, updateInfo));
+    }
+
+    private void showUpdateConfirmation(String filePath, UpdateInfo updateInfo) {
+        WaitDialog.dismiss();
+        uUpdateInfo = updateInfo;
+        isDowngradeUpdate = false;
+        if (uUpdateInfo == null || uUpdateInfo.getHeaderKeyValuePairs() == null || uUpdateInfo.getHeaderKeyValuePairs().length == 0) {
             showErrorDialog("更新失败","更新包不完整，请重新下载");
         } else if (uUpdateInfo.getType() != -1 && uUpdateInfo.getType() != 1) {
             showErrorDialog("更新失败","更新包非全量包，请下载全量包");
         }
         else {
+            if (uUpdateInfo.getBuildTimestamp() > 0
+                    && Config.currentBuildTimestamp > 0
+                    && uUpdateInfo.getBuildTimestamp() < Config.currentBuildTimestamp) {
+                showDowngradeConfirmation(filePath);
+                return;
+            }
             if (!TextUtils.isEmpty(uUpdateInfo.getFlymeid()) && !uUpdateInfo.getFlymeid().equals(Config.flymemodel)) {
                 new MaterialAlertDialogBuilder(activity, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog_Centered)
                         .setTitle("温馨提示")
                         .setCancelable(false)
                         .setMessage("检测到选择的全量包是: " + uUpdateInfo.getBuildInfo() + ", 与您的设备不符，是否继续更新")
-                        .setPositiveButton("继续", (dialog, which) -> {
-                            if (!UpdateServiceManager.getInstance().startUpdateSystem(uUpdateInfo, engineCallback)){
-                                showErrorDialog("更新失败","更新服务错误，请重试");
-                            }
-                        })
+                        .setPositiveButton("继续", (dialog, which) -> startParsedUpdate(false))
                         .setNegativeButton("取消",null)
                         .create().show();
                 return;
             }
 
-            if (!UpdateServiceManager.getInstance().startUpdateSystem(uUpdateInfo, engineCallback)){
-                showErrorDialog("更新失败","更新服务错误，请重试");
+            MessageDialog.build()
+                    .setTitle("确认更新?")
+                    .setMessage(filePath)
+                    .setOkButton("开始更新", (baseDialog, v) -> {
+                        startParsedUpdate(false);
+                        return false;
+                    })
+                    .setCancelButton("取消更新")
+                    .show();
+        }
+    }
+
+    private void showDowngradeConfirmation(String filePath) {
+        if (uUpdateInfo.getType() != 1) {
+            showErrorDialog("无法降级", "降级仅支持明确标记为全量包的固件。");
+            return;
+        }
+        if (!TextUtils.isEmpty(uUpdateInfo.getFlymeid()) && !uUpdateInfo.getFlymeid().equals(Config.flymemodel)) {
+            showErrorDialog("设备不匹配", "降级包与当前设备不匹配，已禁止继续操作。");
+            return;
+        }
+        if (!UpdateServiceManager.getInstance().isDowngradeSupported()) {
+            showErrorDialog("无法降级", "未检测到 bootconfig 的真实解锁状态、可用的 KernelSU resetprop 或 super 分区写权限。");
+            return;
+        }
+        new MaterialAlertDialogBuilder(activity, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog_Centered)
+                .setTitle("高风险降级")
+                .setCancelable(false)
+                .setMessage("将从 " + Config.currentDisplayId + " 降级到 " + uUpdateInfo.getDisplayid()
+                        + "。成功后会强制清除全部用户数据。请确认数据已经备份、电量充足，并保持设备连接电源。\n\n更新包：" + filePath)
+                .setPositiveButton("我已备份，继续", (dialog, which) -> showFinalDowngradeConfirmation())
+                .setNegativeButton("取消", null)
+                .create().show();
+    }
+
+    private void showFinalDowngradeConfirmation() {
+        new MaterialAlertDialogBuilder(activity, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_MaterialAlertDialog_Centered)
+                .setTitle("最后确认")
+                .setCancelable(false)
+                .setMessage("降级开始后不可中断，完成后将恢复出厂设置。确认立即开始降级？")
+                .setPositiveButton("清除数据并降级", (dialog, which) -> startParsedUpdate(true))
+                .setNegativeButton("取消", null)
+                .create().show();
+    }
+
+    private void startParsedUpdate(boolean allowDowngrade) {
+        isDowngradeUpdate = allowDowngrade;
+        mWaitDialog = WaitDialog.show("准备更新中...");
+        activity.getASynHandler().postDelayed(() -> {
+            if (!UpdateServiceManager.getInstance().startUpdateSystem(uUpdateInfo, engineCallback, allowDowngrade)) {
+                activity.getMainHandler().post(() -> showErrorDialog("更新失败", "更新服务错误，请重试"));
             }
+        }, 2000);
+    }
+
+    private String getUpdateErrorMessage(int errorCode) {
+        switch (errorCode) {
+            case UpdateEngineProxy.ErrorCodeConstants.PAYLOAD_TIMESTAMP_ERROR:
+                return isDowngradeUpdate
+                        ? "系统仍拒绝降级，可能存在 AVB 防回滚限制。"
+                        : "更新包版本早于当前系统，Android 更新引擎禁止降级。";
+            case UpdateEngineProxy.ErrorCodeConstants.NOT_ENOUGH_SPACE:
+                return "存储空间不足，请清理空间后重试。";
+            case UpdateEngineProxy.ErrorCodeConstants.DOWNLOAD_PAYLOAD_VERIFICATION_ERROR:
+            case UpdateEngineProxy.ErrorCodeConstants.PAYLOAD_HASH_MISMATCH_ERROR:
+                return "更新包校验失败，请重新下载完整包。";
+            case UpdateEngineProxy.ErrorCodeConstants.DOWNLOAD_TRANSFER_ERROR:
+                return "读取更新包失败，请检查文件后重试。";
+            default:
+                return "更新引擎返回错误代码：" + errorCode;
         }
     }
 
@@ -473,6 +555,10 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         WaitDialog.show("正在安装 KernelSu...");
         if (ksuversion == -1)
             ksuversion = UpdateServiceManager.getInstance().GetKsuVersion();
+        if (ksuversion <= 0) {
+            showRebootDialog("修补失败", "无法读取 KernelSU 版本，请自行操作");
+            return;
+        }
         boolean isLkmMode = UpdateServiceManager.getInstance().KsuIsLkmMode();
 
         // 读取当前分区，用来判断第二分区
@@ -499,9 +585,11 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
             srcBoot = "/dev/block/bootdevice/by-name/boot" + next_slot;
         }
 
-        ShellUtils.fastCmd("rm -r " + installDir + "/*.img");
+        String bootImage = installDir + "/boot.img";
+        String patchImage = installDir + "/kernelsu_patch.img";
+        ShellUtils.fastCmd("rm -f '" + bootImage + "' '" + patchImage + "'");
 
-        if (!extract_image(srcBoot,installDir + "/boot.img")) {
+        if (!extract_image(srcBoot, bootImage)) {
             showRebootDialog("安装失败","镜像分区提取错误，请自行操作");
             return;
         }
@@ -509,8 +597,8 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
 
         List<String> stdout = new ArrayList<>();
         boolean isSuccess = Shell.getShell().newJob()
-                .add("cd " + installDir)
-                .add("/data/adb/ksud boot-patch --magiskboot " + installDir +  "/magiskboot -b " + installDir + "/boot.img")
+                .add("/data/adb/ksud boot-patch -b '" + bootImage
+                        + "' --out '" + installDir + "' --out-name 'kernelsu_patch.img'")
                 .to(stdout, stdout)
                 .exec()
                 .isSuccess();
@@ -520,13 +608,12 @@ public class HomeFragment extends Fragment implements TouchFeedback.OnFeedBackLi
         }
 
 
-        String patch_img = ShellUtils.fastCmd("cd " + installDir + " & ls kernelsu_*.img");
-        if (TextUtils.isEmpty(patch_img)) {
+        if (!SuFileManager.getInstance().getRemote().getFile(patchImage).exists()) {
             showRebootDialog("安装失败","获取修补文件错误，请自行操作");
             return;
         }
 
-        if (!flash_image(installDir + "/" + patch_img, srcBoot)) {
+        if (!flash_image(patchImage, srcBoot)) {
             showRebootDialog("安装失败","刷入镜像失败，请自行操作");
             return;
         }

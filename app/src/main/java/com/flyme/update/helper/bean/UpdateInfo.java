@@ -15,6 +15,7 @@ public class UpdateInfo implements Parcelable {
     private int type;
     private String buildInfo;
     private String flymeid;
+    private long buildTimestamp;
 
     public UpdateInfo() {
     }
@@ -29,6 +30,7 @@ public class UpdateInfo implements Parcelable {
         type = in.readInt();
         buildInfo = in.readString();
         flymeid=  in.readString();
+        buildTimestamp = in.readLong();
     }
 
     public static final Creator<UpdateInfo> CREATOR = new Creator<UpdateInfo>() {
@@ -59,6 +61,7 @@ public class UpdateInfo implements Parcelable {
         dest.writeInt(type);
         dest.writeString(buildInfo);
         dest.writeString(flymeid);
+        dest.writeLong(buildTimestamp);
     }
 
     public int getType() {
@@ -132,6 +135,14 @@ public class UpdateInfo implements Parcelable {
 
     public String getFlymeid() {
         return this.flymeid;
+    }
+
+    public long getBuildTimestamp() {
+        return buildTimestamp;
+    }
+
+    public void setBuildTimestamp(long buildTimestamp) {
+        this.buildTimestamp = buildTimestamp;
     }
 
     @NonNull

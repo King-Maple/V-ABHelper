@@ -32,12 +32,30 @@ public class UpdateServiceManager {
         return uNativeService;
     }
 
-    public boolean startUpdateSystem(UpdateInfo info, IUpdateCallback listener) {
+    public boolean isDowngradeSupported() {
         try {
-            return this.uNativeService.startUpdateSystem(info, listener);
+            return this.uNativeService.isDowngradeSupported();
         } catch (RemoteException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    public boolean startUpdateSystem(UpdateInfo info, IUpdateCallback listener, boolean allowDowngrade) {
+        try {
+            return this.uNativeService.startUpdateSystem(info, listener, allowDowngrade);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public UpdateInfo parseUpdatePackage(String path) {
+        try {
+            return this.uNativeService.parseUpdatePackage(path);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

@@ -28,6 +28,8 @@ public class App extends Application {
         Config.isVab = Utils.getprop("ro.build.ab_update").equals("true");
         Config.currentSlot = Utils.getprop("ro.boot.slot_suffix");
         Config.flymemodel = Utils.getprop("ro.product.flyme.model");
+        Config.currentDisplayId = Utils.getprop("ro.build.display.id");
+        Config.currentBuildTimestamp = Utils.getLongProp("ro.build.date.utc");
         @SuppressLint({"DiscouragedApi", "InternalInsetResource"})
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0)

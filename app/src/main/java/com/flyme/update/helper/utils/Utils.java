@@ -29,6 +29,14 @@ public class Utils {
         return "";
     }
 
+    public static long getLongProp(String key) {
+        try {
+            return Long.parseLong(getprop(key));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
     public static boolean isAbDevice() {
         return Utils.getprop("ro.build.ab_update").equals("true");
     }

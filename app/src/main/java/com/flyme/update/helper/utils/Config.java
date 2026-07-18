@@ -16,4 +16,8 @@ public class Config {
     public static String currentSlot;
 
     public static String flymemodel;
+
+    public static String currentDisplayId;
+
+    public static long currentBuildTimestamp;
 }

@@ -8,7 +8,11 @@ interface IUpdateService {
 
     boolean isValid();
 
-    boolean startUpdateSystem(in UpdateInfo info, IUpdateCallback callback);
+    UpdateInfo parseUpdatePackage(String path);
+
+    boolean isDowngradeSupported();
+
+    boolean startUpdateSystem(in UpdateInfo info, IUpdateCallback callback, boolean allowDowngrade);
 
     boolean closeAssetFileDescriptor();
 
